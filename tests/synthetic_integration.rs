@@ -587,6 +587,32 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
         "BurstEmitted"
     );
 
+    let event_notification = event_client
+        .wait_for_message_where(Duration::from_secs(30), |message| {
+            message["method"] == "acuity_subscription"
+                && message["params"]["subscription"] == event_subscription
+                && message["params"]["result"]["type"] == "event"
+        })
+        .await?;
+    assert_eq!(event_notification["params"]["result"]["key"], event_key);
+    let decoded = &event_notification["params"]["result"]["decodedEvent"];
+    assert!(
+        decoded.is_object(),
+        "expected decodedEvent object in subscription notification: {event_notification}"
+    );
+    assert_eq!(
+        decoded["blockNumber"],
+        event_notification["params"]["result"]["event"]["blockNumber"]
+    );
+    assert_eq!(
+        decoded["eventIndex"],
+        event_notification["params"]["result"]["event"]["eventIndex"]
+    );
+    assert_eq!(decoded["event"]["palletName"], "Synthetic");
+    assert_eq!(decoded["event"]["eventName"], "BurstEmitted");
+    assert_eq!(decoded["event"]["fields"]["batch_id"], "8000");
+    assert_eq!(decoded["event"]["fields"]["seq"], "0");
+
     let status_unsubscribed = status_client
         .request(json!({"jsonrpc": "2.0", "id": 11, "method": "acuity_unsubscribeStatus", "params": {"subscription": status_subscription}}))
         .await?;
@@ -597,6 +623,87 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
         .request(json!({"jsonrpc": "2.0", "id": 13, "method": "acuity_unsubscribeEvents", "params": {"subscription": event_subscription}}))
         .await?;
     assert_eq!(event_unsubscribed["result"], true);
+    event_client.close().await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "requires polkadot-omni-node and a release runtime build"]
+async fn live_event_subscription_notifications_include_decoded_event() -> Result<(), Box<dyn Error>> {
+    let stack =
+        SyntheticStack::start(ConfigOverrides::default(), IndexerOptions::default()).await?;
+
+    let temp = tempfile::tempdir()?;
+    let baseline_manifest_path = temp
+        .path()
+        .join("subscriptions-hydrated-baseline-smoke.json");
+    let baseline_manifest = run_smoke_seeder(&stack.node_url, &baseline_manifest_path)?;
+    wait_for_indexed_tip(
+        &stack.indexer_url,
+        baseline_manifest.end_block,
+        Duration::from_secs(30),
+    )
+    .await?;
+
+    let manifest_path = temp.path().join("subscriptions-hydrated-bulk.json");
+    let event_key = key_u32("batch_id", 8100);
+
+    let mut event_client = WsClient::connect(&stack.indexer_url).await?;
+    let subscribed = event_client
+        .request(json!({
+            "jsonrpc": "2.0",
+            "id": 22,
+            "method": "acuity_subscribeEvents",
+            "params": {"key": event_key.clone()}
+        }))
+        .await?;
+    assert!(subscribed["result"].is_string());
+    let subscription_id = subscribed["result"].as_str().unwrap().to_string();
+
+    let manifest = run_bulk_seeder(&stack.node_url, &manifest_path, 8100, 1, 1)?;
+    wait_for_indexed_tip(
+        &stack.indexer_url,
+        manifest.end_block,
+        Duration::from_secs(30),
+    )
+    .await?;
+
+    let notification = event_client
+        .wait_for_message_where(Duration::from_secs(30), |message| {
+            message["method"] == "acuity_subscription"
+                && message["params"]["subscription"] == subscription_id
+                && message["params"]["result"]["type"] == "event"
+        })
+        .await?;
+
+    assert_eq!(notification["params"]["result"]["key"], event_key);
+    assert!(notification["params"]["result"]["event"]["blockNumber"].is_u64());
+    assert!(notification["params"]["result"]["event"]["eventIndex"].is_u64());
+    let decoded = &notification["params"]["result"]["decodedEvent"];
+    assert!(decoded.is_object(), "expected decodedEvent object: {notification}");
+    assert_eq!(
+        decoded["blockNumber"],
+        notification["params"]["result"]["event"]["blockNumber"]
+    );
+    assert_eq!(
+        decoded["eventIndex"],
+        notification["params"]["result"]["event"]["eventIndex"]
+    );
+    assert_eq!(decoded["event"]["palletName"], "Synthetic");
+    assert_eq!(decoded["event"]["eventName"], "BurstEmitted");
+    assert_eq!(decoded["event"]["fields"]["batch_id"], "8100");
+    assert_eq!(decoded["event"]["fields"]["seq"], "0");
+
+    let unsubscribed = event_client
+        .request(json!({
+            "jsonrpc": "2.0",
+            "id": 23,
+            "method": "acuity_unsubscribeEvents",
+            "params": {"subscription": subscription_id}
+        }))
+        .await?;
+    assert_eq!(unsubscribed["result"], true);
     event_client.close().await?;
 
     Ok(())

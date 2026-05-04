@@ -88,6 +88,19 @@ mod indexer_tests {
         custom_bytes32_key(name, value)
     }
 
+    fn sample_decoded_event(block_number: u32, event_index: u32) -> DecodedEvent {
+        DecodedEvent {
+            block_number,
+            event_index,
+            event: serde_json::json!({
+                "specVersion": 1,
+                "palletName": "Test",
+                "eventName": "Sample",
+                "fields": {}
+            }),
+        }
+    }
+
     fn test_config() -> IndexSpec {
         toml::from_str(
             r#"
@@ -409,8 +422,8 @@ item_revision = { fields = ["bytes32", "u32"] }
 
         let acct = Bytes32([0xDD; 32]);
         let key = bytes32_key("account_id", acct.0);
-        indexer.index_event_key(key.clone(), 100, 3).unwrap();
-        indexer.index_event_key(key.clone(), 200, 1).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 100, event_index: 3 }, sample_decoded_event(100, 3)).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 200, event_index: 1 }, sample_decoded_event(200, 1)).unwrap();
 
         let events = key.get_events(&trees, None, 100).unwrap();
         assert_eq!(events.len(), 2);
@@ -426,7 +439,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         let indexer = Indexer::new_test(trees.clone(), &config);
 
         let key = custom_u32_key("para_id", 2000);
-        indexer.index_event_key(key.clone(), 50, 0).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 50, event_index: 0 }, sample_decoded_event(50, 0)).unwrap();
 
         let events = key.get_events(&trees, None, 100).unwrap();
         assert_eq!(events.len(), 1);
@@ -457,7 +470,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         let indexer = Indexer::new_test(trees.clone(), &config);
 
         let key = custom_bytes32_key("item_id", [0x21; 32]);
-        indexer.index_event_key(key.clone(), 75, 2).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 75, event_index: 2 }, sample_decoded_event(75, 2)).unwrap();
 
         let events = key.get_events(&trees, None, 100).unwrap();
         assert_eq!(events.len(), 1);
@@ -475,7 +488,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             name: "revision_id".into(),
             value: CustomValue::U128(U128Text(42)),
         });
-        indexer.index_event_key(key.clone(), 88, 1).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 88, event_index: 1 }, sample_decoded_event(88, 1)).unwrap();
 
         let events = key.get_events(&trees, None, 100).unwrap();
         assert_eq!(events.len(), 1);
@@ -490,8 +503,8 @@ item_revision = { fields = ["bytes32", "u32"] }
         let indexer = Indexer::new_test(trees.clone(), &config);
 
         let key = Key::Variant(5, 3);
-        indexer.index_event_key(key.clone(), 10, 2).unwrap();
-        indexer.index_event_key(key.clone(), 20, 4).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 10, event_index: 2 }, sample_decoded_event(10, 2)).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 20, event_index: 4 }, sample_decoded_event(20, 4)).unwrap();
 
         let events = key.get_events(&trees, None, 100).unwrap();
         assert_eq!(events.len(), 2);
@@ -507,7 +520,7 @@ item_revision = { fields = ["bytes32", "u32"] }
 
         let key = u32_key("era_index", 1);
         for i in 0..150u32 {
-            indexer.index_event_key(key.clone(), i, 0).unwrap();
+            indexer.index_event_key(key.clone(), EventRef { block_number: i, event_index: 0 }, sample_decoded_event(i, 0)).unwrap();
         }
 
         let events = key.get_events(&trees, None, 100).unwrap();
@@ -920,7 +933,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         )
         .unwrap();
 
-        indexer.index_event_key(key.clone(), 7, 1).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 7, event_index: 1 }, sample_decoded_event(7, 1)).unwrap();
         let first = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
             .await
             .unwrap()
@@ -945,7 +958,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         .unwrap();
 
         indexer
-            .index_event_key(u32_key("ref_index", 42), 8, 2)
+            .index_event_key(u32_key("ref_index", 42), EventRef { block_number: 8, event_index: 2 }, sample_decoded_event(8, 2))
             .unwrap();
         assert!(rx.try_recv().is_err());
     }
@@ -1001,8 +1014,8 @@ item_revision = { fields = ["bytes32", "u32"] }
         )
         .unwrap();
 
-        indexer.index_event_key(key.clone(), 7, 1).unwrap();
-        indexer.index_event_key(key.clone(), 8, 2).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 7, event_index: 1 }, sample_decoded_event(7, 1)).unwrap();
+        indexer.index_event_key(key.clone(), EventRef { block_number: 8, event_index: 2 }, sample_decoded_event(8, 2)).unwrap();
 
         let first = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
             .await
@@ -1017,7 +1030,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             .unwrap()
             .contains_key(&slow_event_sub_id));
 
-        indexer.index_event_key(key, 9, 3).unwrap();
+        indexer.index_event_key(key, EventRef { block_number: 9, event_index: 3 }, sample_decoded_event(9, 3)).unwrap();
         assert!(rx.try_recv().is_err());
     }
 

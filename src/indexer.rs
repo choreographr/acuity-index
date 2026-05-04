@@ -24,7 +24,9 @@ use zerocopy::IntoBytes;
 use crate::{
     config::{IndexSpec, ParamKey, ResolvedParamConfig, ScalarKind},
     errors::{IndexError, internal_error},
-    event_hydration::{FetchedBlock, fetch_block_events, hydrate_event_refs},
+    event_hydration::{
+        FetchedBlock, encode_event_value as encode_hydrated_event_value, fetch_block_events,
+    },
     protocol::*,
     runtime_state::{RuntimeState, SubscriptionEntry, SubscriptionKind, lock_or_recover},
     ws_api::build_index_status_result,
@@ -56,6 +58,7 @@ struct ProcessedBlock {
 #[derive(Debug, Clone)]
 struct ProcessedEvent {
     event_index: u32,
+    decoded_event: DecodedEvent,
     variant_key: Option<Key>,
     keys: Vec<Key>,
 }
@@ -382,8 +385,8 @@ impl Indexer {
     ) -> Result<ProcessedBlock, IndexError> {
         let FetchedBlock {
             block_number,
+            spec_version,
             events,
-            ..
         } = fetched;
 
         let mut key_count = 0u32;
@@ -430,8 +433,23 @@ impl Indexer {
             if derived.variant_key.is_some() {
                 key_count += 1;
             }
+            let decoded_event = DecodedEvent {
+                block_number,
+                event_index,
+                event: encode_hydrated_event_value(
+                    spec_version,
+                    pallet_name,
+                    event_name,
+                    pallet_index,
+                    variant_index,
+                    event_index,
+                    &field_values,
+                ),
+            };
+
             processed_events.push(ProcessedEvent {
                 event_index,
+                decoded_event,
                 variant_key: derived.variant_key,
                 keys: derived.keys,
             });
@@ -458,11 +476,25 @@ impl Indexer {
 
         for event in events {
             if let Some(variant_key) = event.variant_key {
-                self.index_event_key(variant_key, block_number, event.event_index)?;
+                self.index_event_key(
+                    variant_key,
+                    EventRef {
+                        block_number,
+                        event_index: event.event_index,
+                    },
+                    event.decoded_event.clone(),
+                )?;
             }
 
             for key in event.keys {
-                self.index_event_key(key, block_number, event.event_index)?;
+                self.index_event_key(
+                    key,
+                    EventRef {
+                        block_number,
+                        event_index: event.event_index,
+                    },
+                    event.decoded_event.clone(),
+                )?;
             }
         }
 
@@ -528,17 +560,11 @@ impl Indexer {
     pub fn index_event_key(
         &self,
         key: Key,
-        block_number: u32,
-        event_index: u32,
+        event_ref: EventRef,
+        decoded_event: DecodedEvent,
     ) -> Result<(), IndexError> {
-        key.write_db_key(&self.trees, block_number, event_index)?;
-        self.notify_event_subscribers(
-            key,
-            EventRef {
-                block_number,
-                event_index,
-            },
-        );
+        key.write_db_key(&self.trees, event_ref.block_number, event_ref.event_index)?;
+        self.notify_event_subscribers(key, event_ref, decoded_event);
         Ok(())
     }
 
@@ -566,7 +592,7 @@ impl Indexer {
         }
     }
 
-    fn notify_event_subscribers(&self, key: Key, event_ref: EventRef) {
+    fn notify_event_subscribers(&self, key: Key, event_ref: EventRef, decoded_event: DecodedEvent) {
         let subscription_ids: Vec<String> = {
             let subs = lock_or_recover(&self.runtime.subscriptions, "subscriptions");
             subs.iter()
@@ -580,54 +606,21 @@ impl Indexer {
             return;
         }
 
-        let runtime = Arc::clone(&self.runtime);
-        let clients = self
-            .runtime_clients()
-            .map(|(api, rpc)| (api.clone(), rpc.clone()));
-
-        task::spawn(async move {
-            let decoded_event = match clients {
-                Ok((api, rpc)) => match hydrate_event_refs(&api, &rpc, &[event_ref.clone()]).await {
-                    Ok(mut decoded_events) => match decoded_events.pop() {
-                        Some(decoded_event) => Some(decoded_event),
-                        None => {
-                            error!(
-                                "missing hydrated event for notification #{}:{}; sending without decodedEvent",
-                                event_ref.block_number, event_ref.event_index
-                            );
-                            None
-                        }
+        for subscription_id in subscription_ids {
+            let notification = JsonRpcNotification {
+                jsonrpc: "2.0",
+                method: "acuity_subscription",
+                params: NotificationParams {
+                    subscription: subscription_id.clone(),
+                    result: NotificationResult::Event {
+                        key: key.clone(),
+                        event: event_ref.clone(),
+                        decoded_event: Some(decoded_event.clone()),
                     },
-                    Err(err) => {
-                        error!(
-                            "event hydration failed for notification #{}:{}: {err}; sending without decodedEvent",
-                            event_ref.block_number, event_ref.event_index
-                        );
-                        None
-                    }
                 },
-                Err(err) => {
-                    error!("client lookup failed for event notification: {err}; sending without decodedEvent");
-                    None
-                }
             };
-
-            for subscription_id in subscription_ids {
-                let notification = JsonRpcNotification {
-                    jsonrpc: "2.0",
-                    method: "acuity_subscription",
-                    params: NotificationParams {
-                        subscription: subscription_id.clone(),
-                        result: NotificationResult::Event {
-                            key: key.clone(),
-                            event: event_ref.clone(),
-                            decoded_event: decoded_event.clone(),
-                        },
-                    },
-                };
-                keep_subscription(runtime.as_ref(), &subscription_id, &notification);
-            }
-        });
+            keep_subscription(self.runtime.as_ref(), &subscription_id, &notification);
+        }
     }
 }
 
@@ -1939,7 +1932,7 @@ events = [
     }
 
     #[tokio::test]
-    async fn notify_event_subscribers_sends_event_without_decoded_event_when_hydration_fails() {
+    async fn notify_event_subscribers_sends_decoded_event_from_indexed_block() {
         let trees = temp_trees();
         let indexer = Indexer::new_test(trees, &test_config());
         let key = Key::Custom(CustomKey {
@@ -1961,14 +1954,37 @@ events = [
         )
         .unwrap();
 
-        indexer.index_event_key(key.clone(), 7, 3).unwrap();
+        indexer
+            .index_event_key(
+                key.clone(),
+                EventRef {
+                    block_number: 7,
+                    event_index: 3,
+                },
+                DecodedEvent {
+                    block_number: 7,
+                    event_index: 3,
+                    event: serde_json::json!({
+                        "specVersion": 1,
+                        "palletName": "Content",
+                        "eventName": "PublishRevision",
+                        "fields": {"ipfs_hash": "0x01"}
+                    }),
+                },
+            )
+            .unwrap();
 
         let notification = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
             .await
             .unwrap()
             .unwrap();
         match notification.params.result {
-            NotificationResult::Event { decoded_event, .. } => assert!(decoded_event.is_none()),
+            NotificationResult::Event { decoded_event, .. } => {
+                let decoded_event = decoded_event.expect("decoded event should be present");
+                assert_eq!(decoded_event.block_number, 7);
+                assert_eq!(decoded_event.event_index, 3);
+                assert_eq!(decoded_event.event["eventName"], "PublishRevision");
+            }
             other => panic!("expected event notification, got {other:?}"),
         }
         assert!(lock_or_recover(&indexer.runtime.subscriptions, "subscriptions")
@@ -1976,7 +1992,7 @@ events = [
     }
 
     #[tokio::test]
-    async fn replacing_indexer_instance_still_sends_event_without_decoded_event_on_hydration_failure() {
+    async fn replacing_indexer_instance_still_sends_decoded_event_from_indexed_block() {
         let trees = temp_trees();
         let runtime = test_runtime(WsConfig::default().max_total_subscriptions);
         let first_indexer = test_indexer_with_runtime(trees.clone(), runtime.clone());
@@ -2000,14 +2016,37 @@ events = [
         .unwrap();
 
         let replacement_indexer = test_indexer_with_runtime(trees, runtime);
-        replacement_indexer.index_event_key(key.clone(), 9, 2).unwrap();
+        replacement_indexer
+            .index_event_key(
+                key.clone(),
+                EventRef {
+                    block_number: 9,
+                    event_index: 2,
+                },
+                DecodedEvent {
+                    block_number: 9,
+                    event_index: 2,
+                    event: serde_json::json!({
+                        "specVersion": 1,
+                        "palletName": "System",
+                        "eventName": "SomethingHappened",
+                        "fields": {}
+                    }),
+                },
+            )
+            .unwrap();
 
         let notification = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
             .await
             .unwrap()
             .unwrap();
         match notification.params.result {
-            NotificationResult::Event { decoded_event, .. } => assert!(decoded_event.is_none()),
+            NotificationResult::Event { decoded_event, .. } => {
+                let decoded_event = decoded_event.expect("decoded event should be present");
+                assert_eq!(decoded_event.block_number, 9);
+                assert_eq!(decoded_event.event_index, 2);
+                assert_eq!(decoded_event.event["eventName"], "SomethingHappened");
+            }
             other => panic!("expected event notification, got {other:?}"),
         }
         assert!(lock_or_recover(&replacement_indexer.runtime.subscriptions, "subscriptions")
