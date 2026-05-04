@@ -602,6 +602,8 @@ Operational failure modes that may also appear as connection drops or protocol-l
 - subscription control queue saturation
 - connection idle timeout
 
+The server sends periodic WebSocket ping frames as a heartbeat. By default this is every 120 seconds, and when an idle timeout is configured the heartbeat interval is reduced to at most half of `idle_timeout_secs`. Incoming ping/pong frames count as connection activity.
+
 During node outages, local requests such as `acuity_indexStatus` continue to
 work. `acuity_getEventMetadata` and `acuity_getEvents` require live RPC access and return
 `-32001` (upstream unavailable) until the node connection is re-established.
@@ -707,6 +709,8 @@ The server applies these connection-level limits (defaults; all configurable via
 - subscription notification buffer size: `256` (`--subscription-buffer-size`)
 - subscription control channel buffer: `1024` (`--subscription-control-buffer-size`)
 - idle timeout: `300s` (`--idle-timeout-secs`, `0` disables the timeout)
+
+The server also emits WebSocket ping heartbeats to keep otherwise idle connections alive through intermediaries. With the default idle timeout this heartbeat is sent every 120 seconds.
 - max events per query: `1000` (`--max-events-limit`)
 
 If the global connection cap is exhausted, new upgrade attempts are rejected with

@@ -509,6 +509,7 @@ Important operational details:
 - The listener enforces WebSocket frame and message size limits during handshake/runtime.
 - If the global connection cap is exhausted, the upgrade is rejected with HTTP `503 Service Unavailable`.
 - Each accepted connection is subject to an idle timeout and a per-connection subscription cap. Setting `idle_timeout_secs = 0` disables the timeout.
+- The server also sends WebSocket ping frames periodically as a heartbeat. The heartbeat interval is bounded by the idle timeout (`idle_timeout_secs / 2`, capped at 120 seconds), and incoming ping/pong traffic counts as connection activity.
 - There is also a global total subscription cap across all connections. When exceeded, new subscriptions are rejected with a `-32602` error with `data.reason: "subscription_limit"`. Because the subscription was never established, no termination notification is sent for that initial rejection.
 
 ### Local reads

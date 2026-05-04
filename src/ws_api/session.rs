@@ -17,11 +17,21 @@ use super::{
     validation::validate_subscription_request,
 };
 
+const DEFAULT_HEARTBEAT_INTERVAL_SECS: u64 = 120;
+
 fn idle_deadline_for(
     last_activity: time::Instant,
     idle_timeout_secs: u64,
 ) -> Option<time::Instant> {
     (idle_timeout_secs != 0).then(|| last_activity + Duration::from_secs(idle_timeout_secs))
+}
+
+fn heartbeat_interval_for(idle_timeout_secs: u64) -> Duration {
+    match idle_timeout_secs {
+        0 => Duration::from_secs(DEFAULT_HEARTBEAT_INTERVAL_SECS),
+        1 => Duration::from_secs(1),
+        secs => Duration::from_secs((secs / 2).max(1).min(DEFAULT_HEARTBEAT_INTERVAL_SECS)),
+    }
 }
 
 async fn send_json_message<T: serde::Serialize>(
@@ -94,6 +104,9 @@ pub(crate) async fn handle_connection(
     let mut live_ws_config = *live_ws_config_rx.borrow();
     let mut last_activity = time::Instant::now();
     let mut idle_deadline = idle_deadline_for(last_activity, live_ws_config.idle_timeout_secs);
+    let mut heartbeat_interval = time::interval(heartbeat_interval_for(live_ws_config.idle_timeout_secs));
+    heartbeat_interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
+    heartbeat_interval.tick().await;
 
     loop {
         tokio::select! {
@@ -108,7 +121,13 @@ pub(crate) async fn handle_connection(
                 if changed.is_ok() {
                     live_ws_config = *live_ws_config_rx.borrow_and_update();
                     idle_deadline = idle_deadline_for(last_activity, live_ws_config.idle_timeout_secs);
+                    heartbeat_interval = time::interval(heartbeat_interval_for(live_ws_config.idle_timeout_secs));
+                    heartbeat_interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
+                    heartbeat_interval.tick().await;
                 }
+            }
+            _ = heartbeat_interval.tick() => {
+                ws_sender.send(tungstenite::Message::Ping(Vec::new().into())).await?;
             }
             incoming = ws_receiver.next() => {
                 match incoming {
@@ -165,6 +184,15 @@ pub(crate) async fn handle_connection(
                                 send_json_message(&mut ws_sender, &response).await?;
                             }
                         }
+                    }
+                    Some(Ok(tungstenite::Message::Ping(payload))) => {
+                        last_activity = time::Instant::now();
+                        idle_deadline = idle_deadline_for(last_activity, live_ws_config.idle_timeout_secs);
+                        ws_sender.send(tungstenite::Message::Pong(payload)).await?;
+                    }
+                    Some(Ok(tungstenite::Message::Pong(_))) => {
+                        last_activity = time::Instant::now();
+                        idle_deadline = idle_deadline_for(last_activity, live_ws_config.idle_timeout_secs);
                     }
                     Some(Ok(msg)) if msg.is_close() => break,
                     Some(Ok(_)) => {}
@@ -311,6 +339,52 @@ mod tests {
         assert!(server.await.unwrap().is_ok());
         drop(sub_tx);
         dispatcher.await.unwrap();
+    }
+
+    #[test]
+    fn heartbeat_interval_is_bounded_by_idle_timeout_and_default() {
+        assert_eq!(heartbeat_interval_for(0), Duration::from_secs(DEFAULT_HEARTBEAT_INTERVAL_SECS));
+        assert_eq!(heartbeat_interval_for(1), Duration::from_secs(1));
+        assert_eq!(heartbeat_interval_for(2), Duration::from_secs(1));
+        assert_eq!(heartbeat_interval_for(300), Duration::from_secs(120));
+    }
+
+    #[tokio::test]
+    async fn server_heartbeat_keeps_idle_connection_alive() {
+        let trees = temp_trees();
+        let (sub_tx, _sub_rx) = mpsc::channel(4);
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let runtime = disconnected_runtime();
+        let ws_config = LiveWsConfig { idle_timeout_secs: 2, ..DEFAULT_LIVE_WS_CONFIG };
+        let (_live_ws_tx, live_ws_rx) = watch::channel(ws_config);
+        let connection_count = Arc::new(AtomicUsize::new(1));
+        let server = tokio::spawn(async move { let (stream, peer_addr) = listener.accept().await.unwrap(); handle_connection(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), ws_config.subscription_buffer_size, live_ws_rx).await });
+        let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
+        let deadline = time::Instant::now() + Duration::from_secs(3);
+        while time::Instant::now() < deadline {
+            let remaining = deadline.saturating_duration_since(time::Instant::now());
+            match timeout(remaining.min(Duration::from_millis(1100)), client.next()).await {
+                Ok(Some(Ok(_))) => {}
+                Ok(Some(Err(err))) => panic!("heartbeat read failed: {err}"),
+                Ok(None) => panic!("connection closed before heartbeat window elapsed"),
+                Err(_) => {}
+            }
+        }
+        client.send(Message::Text(serde_json::json!({"jsonrpc":"2.0","id":20,"method":"acuity_indexStatus"}).to_string().into())).await.unwrap();
+        let response = timeout(Duration::from_millis(500), async {
+            loop {
+                let message = client.next().await.unwrap().unwrap();
+                if message.is_text() {
+                    break message;
+                }
+            }
+        }).await.unwrap();
+        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        assert!(response.get("result").is_some());
+        assert!(response["result"]["spans"].is_array());
+        client.close(None).await.unwrap();
+        assert!(server.await.unwrap().is_ok());
     }
 
     #[tokio::test]
