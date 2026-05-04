@@ -503,6 +503,7 @@ pub struct WsClient {
     socket: WsStream,
 }
 
+#[allow(dead_code)]
 impl WsClient {
     pub async fn connect(url: &str) -> Result<Self, Box<dyn Error>> {
         let (socket, _) = connect_async(url).await?;
