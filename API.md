@@ -43,9 +43,11 @@ Example:
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "result": [
-    {"start": 1, "end": 1000}
-  ]
+  "result": {
+    "spans": [
+      {"start": 1, "end": 1000}
+    ]
+  }
 }
 ```
 
@@ -70,7 +72,7 @@ Example:
     "code": -32602,
     "message": "Invalid params",
     "data": {
-      "reason": "missing field `key`"
+      "reason": "invalid_key"
     }
   }
 }
@@ -128,7 +130,7 @@ Request:
 
 Response payload:
 
-- array of indexed block spans
+- `spans`: array of indexed block spans
 - each span has:
   - `start`: first indexed block
   - `end`: last indexed block
@@ -139,9 +141,11 @@ Example:
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "result": [
-    {"start": 1, "end": 1000}
-  ]
+  "result": {
+    "spans": [
+      {"start": 1, "end": 1000}
+    ]
+  }
 }
 ```
 
@@ -155,7 +159,7 @@ Request:
 
 Response payload:
 
-- array of pallets
+- `pallets`: array of pallets
 - each pallet has:
   - `index`: pallet event index
   - `name`: pallet name
@@ -170,15 +174,17 @@ Example:
 {
   "jsonrpc": "2.0",
   "id": 2,
-  "result": [
-    {
-      "index": 42,
-      "name": "Referenda",
-      "events": [
-        {"index": 0, "name": "Submitted"}
-      ]
-    }
-  ]
+  "result": {
+    "pallets": [
+      {
+        "index": 42,
+        "name": "Referenda",
+        "events": [
+          {"index": 0, "name": "Submitted"}
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -487,7 +493,7 @@ Payload (in `params.result`):
 
 - `key`: subscribed key that matched
 - `event`: matching event reference
-- `decodedEvent`: decoded event object hydrated from the node before delivery
+- `decodedEvent`: decoded event object hydrated from the node before delivery, or `null` if hydration is temporarily unavailable at notification time
 
 Example:
 
@@ -567,7 +573,7 @@ The server uses standard JSON-RPC 2.0 error codes:
 Application-specific error reasons are provided in `error.data.reason`:
 
 - `subscription_limit`: connection exceeds the per-connection subscription cap or the global total subscription cap
-- `upstream_unavailable`: an RPC-backed request (`acuity_getEventMetadata` or `acuity_getEvents`) is made while the node connection is down
+- `temporarily_unavailable`: an RPC-backed request (`acuity_getEventMetadata` or `acuity_getEvents`) is made while the node connection is down
 
 Example when no request `id` could be recovered:
 
@@ -590,7 +596,7 @@ Invalid custom key payloads are returned as `-32602` responses, including:
 - composite keys nested deeper than `8` composite levels
 - custom values whose encoded key payload exceeds `16384` bytes
 
-Operational failure modes that may also appear as `-32603` responses or connection drops include:
+Operational failure modes that may also appear as connection drops or protocol-level failures include:
 
 - oversized WebSocket frame or message rejected during protocol handling
 - subscription control queue saturation
@@ -707,7 +713,7 @@ If the global connection cap is exhausted, new upgrade attempts are rejected wit
 HTTP `503 Service Unavailable`.
 
 If the total subscription cap is reached, new subscription requests are rejected
-with a `-32603` error response with `data.reason: "subscription_limit"`. Because the
+with a `-32602` error response with `data.reason: "subscription_limit"`. Because the
 subscription was never established, no termination notification is
 sent for that initial rejection.
 

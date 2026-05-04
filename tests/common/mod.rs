@@ -539,8 +539,14 @@ impl WsClient {
     }
 
     pub async fn request(&mut self, request: Value) -> Result<Value, Box<dyn Error>> {
+        let request_id = request.get("id").cloned();
         self.send_json(request).await?;
-        self.recv_json().await
+        loop {
+            let message = self.recv_json().await?;
+            if message.get("id") == request_id.as_ref() {
+                return Ok(message);
+            }
+        }
     }
 
     pub async fn recv_json_timeout(&mut self, duration: Duration) -> Result<Value, Box<dyn Error>> {

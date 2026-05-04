@@ -13,7 +13,7 @@ use tokio::sync::mpsc;
 use tracing::error;
 
 use crate::metrics::Metrics;
-use crate::protocol::{Key, JsonRpcNotification};
+use crate::protocol::{JsonRpcNotification, Key};
 
 pub fn lock_or_recover<'a, T>(mutex: &'a Mutex<T>, name: &str) -> MutexGuard<'a, T> {
     match mutex.lock() {
@@ -25,9 +25,20 @@ pub fn lock_or_recover<'a, T>(mutex: &'a Mutex<T>, name: &str) -> MutexGuard<'a,
     }
 }
 
+#[derive(Clone)]
+pub struct SubscriptionEntry {
+    pub tx: mpsc::Sender<JsonRpcNotification>,
+    pub kind: SubscriptionKind,
+}
+
+#[derive(Clone)]
+pub enum SubscriptionKind {
+    Status,
+    Events { key: Key },
+}
+
 pub struct RuntimeState {
-    pub(crate) status_subs: Mutex<Vec<mpsc::Sender<JsonRpcNotification>>>,
-    pub(crate) events_subs: Mutex<HashMap<Key, Vec<mpsc::Sender<JsonRpcNotification>>>>,
+    pub(crate) subscriptions: Mutex<HashMap<String, SubscriptionEntry>>,
     pub(crate) metrics: Arc<Metrics>,
     api: Mutex<Option<OnlineClient<PolkadotConfig>>>,
     rpc: Mutex<Option<LegacyRpcMethods<RpcConfigFor<PolkadotConfig>>>>,
@@ -42,8 +53,7 @@ impl RuntimeState {
 
     pub fn with_metrics(_max_total_subscriptions: usize, metrics: Arc<Metrics>) -> Self {
         Self {
-            status_subs: Mutex::new(Vec::new()),
-            events_subs: Mutex::new(HashMap::new()),
+            subscriptions: Mutex::new(HashMap::new()),
             metrics,
             api: Mutex::new(None),
             rpc: Mutex::new(None),

@@ -500,7 +500,7 @@ mod shared_tests {
             decoded_events: vec![],
             proofs: ProofsResult {
                 available: false,
-                reason: "finalized_proofs_unavailable".into(),
+                reason: REASON_FINALIZED_PROOFS_UNAVAILABLE.into(),
                 message: "Finalized proofs are only available when the indexer is running with finalized indexing.".into(),
                 items: vec![],
             },

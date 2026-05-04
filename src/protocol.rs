@@ -602,6 +602,7 @@ pub const REASON_INVALID_CURSOR: &str = "invalid_cursor";
 pub const REASON_SUBSCRIPTION_LIMIT: &str = "subscription_limit";
 pub const REASON_TEMPORARILY_UNAVAILABLE: &str = "temporarily_unavailable";
 pub const REASON_PROOFS_UNAVAILABLE: &str = "proofs_unavailable";
+pub const REASON_FINALIZED_PROOFS_UNAVAILABLE: &str = "finalized_proofs_unavailable";
 
 // ─── JSON-RPC response builders ──────────────────────────────────────────────
 
@@ -768,21 +769,22 @@ pub enum NotificationResult {
 #[derive(Debug)]
 pub enum SubscriptionMessage {
     SubscribeStatus {
+        subscription_id: String,
         tx: mpsc::Sender<JsonRpcNotification>,
         response_tx: Option<oneshot::Sender<Result<(), String>>>,
     },
     UnsubscribeStatus {
-        tx: mpsc::Sender<JsonRpcNotification>,
+        subscription_id: String,
         response_tx: Option<oneshot::Sender<Result<(), String>>>,
     },
     SubscribeEvents {
+        subscription_id: String,
         key: Key,
         tx: mpsc::Sender<JsonRpcNotification>,
         response_tx: Option<oneshot::Sender<Result<(), String>>>,
     },
     UnsubscribeEvents {
-        key: Key,
-        tx: mpsc::Sender<JsonRpcNotification>,
+        subscription_id: String,
         response_tx: Option<oneshot::Sender<Result<(), String>>>,
     },
 }

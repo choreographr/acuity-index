@@ -14,7 +14,7 @@ use subxt::{
     rpcs::methods::legacy::LegacyRpcMethods,
 };
 use tokio::{
-    sync::{mpsc, watch},
+    sync::watch,
     task,
     time::{self, Duration, Instant, MissedTickBehavior},
 };
@@ -26,7 +26,7 @@ use crate::{
     errors::{IndexError, internal_error},
     event_hydration::{FetchedBlock, fetch_block_events, hydrate_event_refs},
     protocol::*,
-    runtime_state::{RuntimeState, lock_or_recover},
+    runtime_state::{RuntimeState, SubscriptionEntry, SubscriptionKind, lock_or_recover},
     ws_api::build_index_status_result,
 };
 
@@ -544,23 +544,39 @@ impl Indexer {
 
     pub fn notify_status_subscribers(&self) {
         let result = build_index_status_result(&self.trees.span);
-        let msg = JsonRpcNotification {
-            jsonrpc: "2.0",
-            method: "acuity_subscription",
-            params: NotificationParams {
-                subscription: String::new(), // Status subscribers don't have individual IDs in fanout
-                result: NotificationResult::Status { spans: result.spans },
-            },
+        let subscription_ids: Vec<String> = {
+            let subs = lock_or_recover(&self.runtime.subscriptions, "subscriptions");
+            subs.iter()
+                .filter_map(|(id, entry)| matches!(entry.kind, SubscriptionKind::Status).then_some(id.clone()))
+                .collect()
         };
-        let mut subs = lock_or_recover(&self.runtime.status_subs, "status_subs");
-        subs.retain(|tx| keep_subscriber(tx, &msg));
+
+        for subscription_id in subscription_ids {
+            let msg = JsonRpcNotification {
+                jsonrpc: "2.0",
+                method: "acuity_subscription",
+                params: NotificationParams {
+                    subscription: subscription_id.clone(),
+                    result: NotificationResult::Status {
+                        spans: result.spans.clone(),
+                    },
+                },
+            };
+            keep_subscription(self.runtime.as_ref(), &subscription_id, &msg);
+        }
     }
 
     fn notify_event_subscribers(&self, key: Key, event_ref: EventRef) {
-        let has_subscribers = lock_or_recover(&self.runtime.events_subs, "events_subs")
-            .get(&key)
-            .is_some_and(|txs| !txs.is_empty());
-        if !has_subscribers {
+        let subscription_ids: Vec<String> = {
+            let subs = lock_or_recover(&self.runtime.subscriptions, "subscriptions");
+            subs.iter()
+                .filter_map(|(id, entry)| match &entry.kind {
+                    SubscriptionKind::Events { key: subscribed_key } if subscribed_key == &key => Some(id.clone()),
+                    _ => None,
+                })
+                .collect()
+        };
+        if subscription_ids.is_empty() {
             return;
         }
 
@@ -570,65 +586,66 @@ impl Indexer {
             .map(|(api, rpc)| (api.clone(), rpc.clone()));
 
         task::spawn(async move {
-            let (api, rpc) = match clients {
-                Ok(clients) => clients,
-                Err(err) => {
-                    error!("dropping event subscription after client lookup failure: {err}");
-                    drop_event_subscribers(runtime.as_ref(), &key);
-                    return;
-                }
-            };
-
-            let decoded_event = match hydrate_event_refs(&api, &rpc, &[event_ref.clone()]).await {
-                Ok(mut decoded_events) => match decoded_events.pop() {
-                    Some(decoded_event) => decoded_event,
-                    None => {
+            let decoded_event = match clients {
+                Ok((api, rpc)) => match hydrate_event_refs(&api, &rpc, &[event_ref.clone()]).await {
+                    Ok(mut decoded_events) => match decoded_events.pop() {
+                        Some(decoded_event) => Some(decoded_event),
+                        None => {
+                            error!(
+                                "missing hydrated event for notification #{}:{}; sending without decodedEvent",
+                                event_ref.block_number, event_ref.event_index
+                            );
+                            None
+                        }
+                    },
+                    Err(err) => {
                         error!(
-                            "dropping event subscription after missing hydrated event for #{}:{}",
+                            "event hydration failed for notification #{}:{}: {err}; sending without decodedEvent",
                             event_ref.block_number, event_ref.event_index
                         );
-                        drop_event_subscribers(runtime.as_ref(), &key);
-                        return;
+                        None
                     }
                 },
                 Err(err) => {
-                    error!(
-                        "dropping event subscription after hydration failure for #{}:{}: {err}",
-                        event_ref.block_number, event_ref.event_index
-                    );
-                    drop_event_subscribers(runtime.as_ref(), &key);
-                    return;
+                    error!("client lookup failed for event notification: {err}; sending without decodedEvent");
+                    None
                 }
             };
 
-            let notification = JsonRpcNotification {
-                jsonrpc: "2.0",
-                method: "acuity_subscription",
-                params: NotificationParams {
-                    subscription: String::new(), // Event subscribers don't have individual IDs in fanout
-                    result: NotificationResult::Event {
-                        key: key.clone(),
-                        event: event_ref,
-                        decoded_event: Some(decoded_event),
+            for subscription_id in subscription_ids {
+                let notification = JsonRpcNotification {
+                    jsonrpc: "2.0",
+                    method: "acuity_subscription",
+                    params: NotificationParams {
+                        subscription: subscription_id.clone(),
+                        result: NotificationResult::Event {
+                            key: key.clone(),
+                            event: event_ref.clone(),
+                            decoded_event: decoded_event.clone(),
+                        },
                     },
-                },
-            };
-            let mut subs = lock_or_recover(&runtime.events_subs, "events_subs");
-            if let Some(txs) = subs.get_mut(&key) {
-                txs.retain(|tx| keep_subscriber(tx, &notification));
-            }
-            if subs.get(&key).is_some_and(Vec::is_empty) {
-                subs.remove(&key);
+                };
+                keep_subscription(runtime.as_ref(), &subscription_id, &notification);
             }
         });
     }
 }
 
-fn drop_event_subscribers(runtime: &RuntimeState, key: &Key) {
-    lock_or_recover(&runtime.events_subs, "events_subs").remove(key);
+fn drop_subscription(runtime: &RuntimeState, subscription_id: &str) {
+    lock_or_recover(&runtime.subscriptions, "subscriptions").remove(subscription_id);
+    update_subscription_metrics(runtime);
 }
 
-fn keep_subscriber(tx: &mpsc::Sender<JsonRpcNotification>, msg: &JsonRpcNotification) -> bool {
+fn keep_subscription(runtime: &RuntimeState, subscription_id: &str, msg: &JsonRpcNotification) -> bool {
+    let tx = {
+        let subs = lock_or_recover(&runtime.subscriptions, "subscriptions");
+        subs.get(subscription_id).map(|entry| entry.tx.clone())
+    };
+
+    let Some(tx) = tx else {
+        return false;
+    };
+
     if tx.try_send(msg.clone()).is_ok() {
         return true;
     }
@@ -638,13 +655,14 @@ fn keep_subscriber(tx: &mpsc::Sender<JsonRpcNotification>, msg: &JsonRpcNotifica
         jsonrpc: "2.0",
         method: "acuity_subscription",
         params: NotificationParams {
-            subscription: String::new(),
+            subscription: subscription_id.to_owned(),
             result: NotificationResult::Terminated {
                 reason: "backpressure".into(),
                 message: "subscriber disconnected due to backpressure".into(),
             },
         },
     });
+    drop_subscription(runtime, subscription_id);
     false
 }
 
@@ -788,13 +806,13 @@ pub fn process_sub_msg(
     msg: SubscriptionMessage,
 ) -> Result<(), IndexError> {
     match msg {
-        SubscriptionMessage::SubscribeStatus { tx, response_tx } => {
-            let mut status_subs = lock_or_recover(&runtime.status_subs, "status_subs");
-            let events_count: usize = lock_or_recover(&runtime.events_subs, "events_subs")
-                .values()
-                .map(Vec::len)
-                .sum();
-            if status_subs.len() + events_count >= ws_config.max_total_subscriptions {
+        SubscriptionMessage::SubscribeStatus {
+            subscription_id,
+            tx,
+            response_tx,
+        } => {
+            let mut subs = lock_or_recover(&runtime.subscriptions, "subscriptions");
+            if subs.len() >= ws_config.max_total_subscriptions {
                 let message = format!(
                     "total subscription limit exceeded: max {}",
                     ws_config.max_total_subscriptions
@@ -810,23 +828,35 @@ pub fn process_sub_msg(
             if let Some(response_tx) = response_tx {
                 let _ = response_tx.send(Ok(()));
             }
-            status_subs.push(tx);
+            subs.insert(
+                subscription_id,
+                SubscriptionEntry {
+                    tx,
+                    kind: SubscriptionKind::Status,
+                },
+            );
         }
-        SubscriptionMessage::UnsubscribeStatus { tx, response_tx } => {
-            lock_or_recover(&runtime.status_subs, "status_subs").retain(|t| !tx.same_channel(t));
+        SubscriptionMessage::UnsubscribeStatus {
+            subscription_id,
+            response_tx,
+        }
+        | SubscriptionMessage::UnsubscribeEvents {
+            subscription_id,
+            response_tx,
+        } => {
+            lock_or_recover(&runtime.subscriptions, "subscriptions").remove(&subscription_id);
             if let Some(response_tx) = response_tx {
                 let _ = response_tx.send(Ok(()));
             }
         }
         SubscriptionMessage::SubscribeEvents {
+            subscription_id,
             key,
             tx,
             response_tx,
         } => {
-            let mut subs = lock_or_recover(&runtime.events_subs, "events_subs");
-            let status_count = lock_or_recover(&runtime.status_subs, "status_subs").len();
-            let current_events_count: usize = subs.values().map(Vec::len).sum();
-            if status_count + current_events_count >= ws_config.max_total_subscriptions {
+            let mut subs = lock_or_recover(&runtime.subscriptions, "subscriptions");
+            if subs.len() >= ws_config.max_total_subscriptions {
                 let message = format!(
                     "total subscription limit exceeded: max {}",
                     ws_config.max_total_subscriptions
@@ -842,20 +872,13 @@ pub fn process_sub_msg(
             if let Some(response_tx) = response_tx {
                 let _ = response_tx.send(Ok(()));
             }
-            subs.entry(key).or_default().push(tx);
-        }
-        SubscriptionMessage::UnsubscribeEvents {
-            key,
-            tx,
-            response_tx,
-        } => {
-            let mut subs = lock_or_recover(&runtime.events_subs, "events_subs");
-            if let Some(txs) = subs.get_mut(&key) {
-                txs.retain(|t| !tx.same_channel(t));
-            }
-            if let Some(response_tx) = response_tx {
-                let _ = response_tx.send(Ok(()));
-            }
+            subs.insert(
+                subscription_id,
+                SubscriptionEntry {
+                    tx,
+                    kind: SubscriptionKind::Events { key },
+                },
+            );
         }
     }
     update_subscription_metrics(runtime);
@@ -863,11 +886,13 @@ pub fn process_sub_msg(
 }
 
 fn update_subscription_metrics(runtime: &RuntimeState) {
-    let status_subscriptions = lock_or_recover(&runtime.status_subs, "status_subs").len();
-    let event_subscriptions: usize = lock_or_recover(&runtime.events_subs, "events_subs")
-        .values()
-        .map(Vec::len)
-        .sum();
+    let (status_subscriptions, event_subscriptions) = {
+        let subs = lock_or_recover(&runtime.subscriptions, "subscriptions");
+        subs.values().fold((0usize, 0usize), |(status, event), entry| match entry.kind {
+            SubscriptionKind::Status => (status + 1, event),
+            SubscriptionKind::Events { .. } => (status, event + 1),
+        })
+    };
     runtime
         .metrics
         .set_status_subscriptions(status_subscriptions);
@@ -1443,6 +1468,7 @@ pub async fn run_indexer(
 mod tests {
     use super::*;
     use scale_value::{Composite, Primitive, Value, ValueDef, Variant};
+    use tokio::sync::mpsc;
     use zerocopy::FromBytes;
 
     fn temp_trees() -> Trees {
@@ -1913,7 +1939,7 @@ events = [
     }
 
     #[tokio::test]
-    async fn notify_event_subscribers_drops_subscription_when_hydration_fails() {
+    async fn notify_event_subscribers_sends_event_without_decoded_event_when_hydration_fails() {
         let trees = temp_trees();
         let indexer = Indexer::new_test(trees, &test_config());
         let key = Key::Custom(CustomKey {
@@ -1922,10 +1948,12 @@ events = [
         });
 
         let (tx, mut rx) = mpsc::channel(1);
+        let subscription_id = "sub_hydration_fail_1".to_string();
         process_sub_msg(
             indexer.runtime.as_ref(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::SubscribeEvents {
+                subscription_id: subscription_id.clone(),
                 key: key.clone(),
                 tx,
                 response_tx: None,
@@ -1935,17 +1963,20 @@ events = [
 
         indexer.index_event_key(key.clone(), 7, 3).unwrap();
 
-        assert!(matches!(
-            tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await,
-            Ok(None) | Err(_)
-        ));
-        assert!(lock_or_recover(&indexer.runtime.events_subs, "events_subs")
-            .get(&key)
-            .is_none());
+        let notification = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        match notification.params.result {
+            NotificationResult::Event { decoded_event, .. } => assert!(decoded_event.is_none()),
+            other => panic!("expected event notification, got {other:?}"),
+        }
+        assert!(lock_or_recover(&indexer.runtime.subscriptions, "subscriptions")
+            .contains_key(&subscription_id));
     }
 
     #[tokio::test]
-    async fn replacing_indexer_instance_still_drops_subscription_on_hydration_failure() {
+    async fn replacing_indexer_instance_still_sends_event_without_decoded_event_on_hydration_failure() {
         let trees = temp_trees();
         let runtime = test_runtime(WsConfig::default().max_total_subscriptions);
         let first_indexer = test_indexer_with_runtime(trees.clone(), runtime.clone());
@@ -1955,10 +1986,12 @@ events = [
         });
 
         let (tx, mut rx) = mpsc::channel(1);
+        let subscription_id = "sub_hydration_fail_2".to_string();
         process_sub_msg(
             first_indexer.runtime.as_ref(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::SubscribeEvents {
+                subscription_id: subscription_id.clone(),
                 key: key.clone(),
                 tx,
                 response_tx: None,
@@ -1969,13 +2002,16 @@ events = [
         let replacement_indexer = test_indexer_with_runtime(trees, runtime);
         replacement_indexer.index_event_key(key.clone(), 9, 2).unwrap();
 
-        assert!(matches!(
-            tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await,
-            Ok(None)
-        ));
-        assert!(lock_or_recover(&replacement_indexer.runtime.events_subs, "events_subs")
-            .get(&key)
-            .is_none());
+        let notification = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        match notification.params.result {
+            NotificationResult::Event { decoded_event, .. } => assert!(decoded_event.is_none()),
+            other => panic!("expected event notification, got {other:?}"),
+        }
+        assert!(lock_or_recover(&replacement_indexer.runtime.subscriptions, "subscriptions")
+            .contains_key(&subscription_id));
     }
 
     #[test]
@@ -2044,17 +2080,11 @@ spec_change_blocks = [0]
     #[tokio::test]
     async fn process_sub_msg_ignores_missing_event_subscription_bucket() {
         let indexer = Indexer::new_test(temp_trees(), &test_config());
-        let (tx, _rx) = mpsc::channel(1);
-
         process_sub_msg(
             indexer.runtime.as_ref(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::UnsubscribeEvents {
-                key: Key::Custom(CustomKey {
-                    name: "ref_index".into(),
-                    value: CustomValue::U32(999),
-                }),
-                tx,
+                subscription_id: "sub_missing".into(),
                 response_tx: None,
             },
         )

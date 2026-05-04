@@ -105,7 +105,7 @@ pub(crate) async fn build_get_events_result(
     let proofs = if !runtime.finalized_mode() {
         ProofsResult {
             available: false,
-            reason: REASON_PROOFS_UNAVAILABLE.into(),
+            reason: REASON_FINALIZED_PROOFS_UNAVAILABLE.into(),
             message: "Finalized proofs are only available when the indexer is running with finalized indexing.".into(),
             items: vec![],
         }
@@ -161,6 +161,7 @@ pub(crate) fn process_local_method(
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::SubscribeStatus {
+                    subscription_id: subscription_id.clone(),
                     tx: sub_response_tx.clone(),
                     response_tx: None,
                 },
@@ -170,14 +171,14 @@ pub(crate) fn process_local_method(
             Some(Ok(jsonrpc_success(id, serde_json::json!(subscription_id))))
         }
         "acuity_unsubscribeStatus" => {
-            let _params = match serde_json::from_value::<UnsubscribeParams>(params.clone()) {
+            let params = match serde_json::from_value::<UnsubscribeParams>(params.clone()) {
                 Ok(p) => p,
                 Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
             };
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::UnsubscribeStatus {
-                    tx: sub_response_tx.clone(),
+                    subscription_id: params.subscription,
                     response_tx: None,
                 },
             ) {
@@ -208,6 +209,7 @@ pub(crate) fn process_local_method(
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::SubscribeEvents {
+                    subscription_id: subscription_id.clone(),
                     key: params.key.clone(),
                     tx: sub_response_tx.clone(),
                     response_tx: None,
@@ -218,12 +220,20 @@ pub(crate) fn process_local_method(
             Some(Ok(jsonrpc_success(id, serde_json::json!(subscription_id))))
         }
         "acuity_unsubscribeEvents" => {
-            let _params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
+            let params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
                 Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
             };
-            // Unsubscribe by subscription ID is handled via the subscription dispatcher
-            return None;
+            if let Err(err) = enqueue_subscription_message(
+                sub_tx,
+                SubscriptionMessage::UnsubscribeEvents {
+                    subscription_id: params.subscription,
+                    response_tx: None,
+                },
+            ) {
+                return Some(Err(err));
+            }
+            Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
         }
         _ => return None,
     }
@@ -243,6 +253,7 @@ async fn process_subscription_method(
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::SubscribeStatus {
+                    subscription_id: subscription_id.clone(),
                     tx: sub_response_tx.clone(),
                     response_tx: Some(response_tx),
                 },
@@ -260,7 +271,7 @@ async fn process_subscription_method(
             }
         }
         "acuity_unsubscribeStatus" => {
-            let _params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
+            let params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
                 Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
             };
@@ -268,7 +279,7 @@ async fn process_subscription_method(
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::UnsubscribeStatus {
-                    tx: sub_response_tx.clone(),
+                    subscription_id: params.subscription,
                     response_tx: Some(response_tx),
                 },
             ) {
@@ -295,6 +306,7 @@ async fn process_subscription_method(
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::SubscribeEvents {
+                    subscription_id: subscription_id.clone(),
                     key: params.key.clone(),
                     tx: sub_response_tx.clone(),
                     response_tx: Some(response_tx),
@@ -313,17 +325,15 @@ async fn process_subscription_method(
             }
         }
         "acuity_unsubscribeEvents" => {
-            let _params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
+            let params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
                 Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
             };
-            // For unsubscribe by subscription ID, we send to the dispatcher
             let (response_tx, response_rx) = oneshot::channel();
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
                 SubscriptionMessage::UnsubscribeEvents {
-                    key: Key::Variant(0, 0), // Placeholder - dispatcher uses channel identity
-                    tx: sub_response_tx.clone(),
+                    subscription_id: params.subscription,
                     response_tx: Some(response_tx),
                 },
             ) {
@@ -731,7 +741,7 @@ mod tests {
         let trees = temp_trees();
         let (sub_tx, _sub_rx) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
-        sub_tx.try_send(SubscriptionMessage::SubscribeStatus { tx: response_tx.clone(), response_tx: None }).unwrap();
+        sub_tx.try_send(SubscriptionMessage::SubscribeStatus { subscription_id: "sub_full".into(), tx: response_tx.clone(), response_tx: None }).unwrap();
         let result = process_local_method(&trees, 9, "acuity_subscribeStatus", &serde_json::Value::Null, &sub_tx, &response_tx).unwrap();
         assert!(matches!(result, Err(IndexError::Io(err)) if err.kind() == std::io::ErrorKind::ConnectionAborted));
     }

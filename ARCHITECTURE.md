@@ -509,7 +509,7 @@ Important operational details:
 - The listener enforces WebSocket frame and message size limits during handshake/runtime.
 - If the global connection cap is exhausted, the upgrade is rejected with HTTP `503 Service Unavailable`.
 - Each accepted connection is subject to an idle timeout and a per-connection subscription cap. Setting `idle_timeout_secs = 0` disables the timeout.
-- There is also a global total subscription cap across all connections. When exceeded, new subscriptions are rejected with a `-32603` error with `data.reason: "subscription_limit"`. Because the subscription was never established, no termination notification is sent for that initial rejection.
+- There is also a global total subscription cap across all connections. When exceeded, new subscriptions are rejected with a `-32602` error with `data.reason: "subscription_limit"`. Because the subscription was never established, no termination notification is sent for that initial rejection.
 
 ### Local reads
 
@@ -540,7 +540,7 @@ Current WebSocket-side safeguards:
 - subscribe/unsubscribe forwarding uses bounded backpressure rather than unbounded buffering
 - per-connection subscriptions are capped (configurable: `--max-subscriptions-per-connection`)
 - total subscriptions across all connections are capped (configurable: `--max-total-subscriptions`)
-- invalid custom key payloads are rejected with request-scoped `invalid_request` responses before subscription registration or sled scans
+- invalid custom key payloads are rejected with request-scoped `invalid params` responses before subscription registration or sled scans
 - custom key names are limited to `128` bytes and string values to `1024` bytes
 - composite values are limited to `64` elements, `8` nesting levels, and `16384` encoded bytes
 - idle connections are disconnected automatically (configurable: `--idle-timeout-secs`)

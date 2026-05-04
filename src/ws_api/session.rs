@@ -1,7 +1,7 @@
 use crate::{errors::IndexError, protocol::*, runtime_state::RuntimeState};
 
 use futures::{SinkExt, StreamExt};
-use std::{collections::HashMap, net::SocketAddr, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
+use std::{collections::HashSet, net::SocketAddr, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
 use tokio::net::{TcpStream};
 use tokio::sync::{mpsc, mpsc::Sender, watch};
 use tokio::time::{self, Duration};
@@ -89,9 +89,8 @@ pub(crate) async fn handle_connection(
 
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
     let (sub_events_tx, mut sub_events_rx) = mpsc::channel(subscription_buffer_size.max(1));
-    // Track subscriptions by subscription ID
     let mut status_subscription: Option<String> = None;
-    let mut event_subscriptions: HashMap<String, Key> = HashMap::new();
+    let mut event_subscriptions: HashSet<String> = HashSet::new();
     let mut live_ws_config = *live_ws_config_rx.borrow();
     let mut last_activity = time::Instant::now();
     let mut idle_deadline = idle_deadline_for(last_activity, live_ws_config.idle_timeout_secs);
@@ -128,7 +127,7 @@ pub(crate) async fn handle_connection(
                                 // Validate subscription limits for subscribe methods
                                 if let Err(err) = validate_subscription_request(
                                     status_subscription.is_some(),
-                                    &event_subscriptions.values().cloned().collect(),
+                                    event_subscriptions.len(),
                                     &request.method,
                                     live_ws_config.max_subscriptions_per_connection,
                                 ) {
@@ -187,21 +186,20 @@ pub(crate) async fn handle_connection(
     }
 
     // Cleanup subscriptions on disconnect
-    if status_subscription.is_some() {
+    if let Some(subscription_id) = status_subscription {
         let _ = enqueue_subscription_message(
             &sub_tx,
             SubscriptionMessage::UnsubscribeStatus {
-                tx: sub_events_tx.clone(),
+                subscription_id,
                 response_tx: None,
             },
         );
     }
-    for (_sub_id, _key) in event_subscriptions {
+    for subscription_id in event_subscriptions {
         let _ = enqueue_subscription_message(
             &sub_tx,
             SubscriptionMessage::UnsubscribeEvents {
-                key: Key::Variant(0, 0), // Placeholder - dispatcher uses channel identity
-                tx: sub_events_tx.clone(),
+                subscription_id,
                 response_tx: None,
             },
         );
@@ -213,7 +211,7 @@ pub(crate) async fn handle_connection(
 /// Update local subscription tracking state based on method and response.
 fn update_subscription_state(
     status_subscription: &mut Option<String>,
-    event_subscriptions: &mut HashMap<String, Key>,
+    event_subscriptions: &mut HashSet<String>,
     method: &str,
     params: &serde_json::Value,
     response: &JsonRpcResponse,
@@ -232,9 +230,7 @@ fn update_subscription_state(
         }
         "acuity_subscribeEvents" => {
             if let Some(sub_id) = success.result.as_str() {
-                if let Ok(p) = serde_json::from_value::<SubscribeEventsParams>(params.clone()) {
-                    event_subscriptions.insert(sub_id.to_string(), p.key);
-                }
+                event_subscriptions.insert(sub_id.to_string());
             }
         }
         "acuity_unsubscribeEvents" => {
@@ -288,7 +284,7 @@ mod tests {
         let trees = temp_trees();
         let runtime = Arc::new(RuntimeState::new(1));
         let (existing_tx, _existing_rx) = mpsc::channel(1);
-        crate::indexer::process_sub_msg(runtime.as_ref(), &LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG }, SubscriptionMessage::SubscribeStatus { tx: existing_tx.clone(), response_tx: None }).unwrap();
+        crate::indexer::process_sub_msg(runtime.as_ref(), &LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG }, SubscriptionMessage::SubscribeStatus { subscription_id: "sub_existing".into(), tx: existing_tx.clone(), response_tx: None }).unwrap();
         let (sub_tx, sub_rx) = mpsc::channel(4);
         let (_dispatcher_live_ws_tx, dispatcher_live_ws_rx) = watch::channel(LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG });
         let dispatcher = spawn_subscription_dispatcher(runtime.clone(), sub_rx, dispatcher_live_ws_rx);
@@ -304,7 +300,7 @@ mod tests {
         let response = client.next().await.unwrap().unwrap();
         let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert!(response.get("error").is_some());
-        crate::indexer::process_sub_msg(runtime.as_ref(), &LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG }, SubscriptionMessage::UnsubscribeStatus { tx: existing_tx, response_tx: None }).unwrap();
+        crate::indexer::process_sub_msg(runtime.as_ref(), &LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG }, SubscriptionMessage::UnsubscribeStatus { subscription_id: "sub_existing".into(), response_tx: None }).unwrap();
         let second_request = serde_json::json!({"jsonrpc":"2.0","id":19,"method":"acuity_subscribeEvents","params":{"key":{"type":"Custom","value":{"name":"pool_id","kind":"u32","value":2}}}});
         client.send(Message::Text(second_request.to_string().into())).await.unwrap();
         let response = client.next().await.unwrap().unwrap();

@@ -1,7 +1,5 @@
 use crate::{errors::IndexError, protocol::*};
 
-use std::collections::HashSet;
-
 use super::disconnect_error;
 
 pub(crate) const MAX_WS_MESSAGE_SIZE_BYTES: usize = 256 * 1024;
@@ -81,16 +79,13 @@ fn validate_custom_value(value: &CustomValue, depth: usize) -> Result<usize, Str
 
 pub(crate) fn validate_subscription_request(
     status_subscribed: bool,
-    event_subscriptions: &HashSet<Key>,
+    event_subscription_count: usize,
     method: &str,
     max_subscriptions_per_connection: usize,
 ) -> Result<(), IndexError> {
     let next_count = match method {
-        "acuity_subscribeStatus" if !status_subscribed => event_subscriptions.len() + 1,
-        "acuity_subscribeEvents" => {
-            // We can't check the key here without params, so we count optimistically
-            event_subscriptions.len() + 1 + usize::from(status_subscribed)
-        }
+        "acuity_subscribeStatus" if !status_subscribed => event_subscription_count + 1,
+        "acuity_subscribeEvents" => event_subscription_count + 1 + usize::from(status_subscribed),
         _ => return Ok(()),
     };
 
@@ -111,18 +106,11 @@ mod tests {
 
     #[test]
     fn validate_subscription_request_enforces_connection_limit() {
-        let event_subscriptions = (0..DEFAULT_WS_CONFIG.max_subscriptions_per_connection)
-            .map(|i| {
-                Key::Custom(CustomKey {
-                    name: format!("key_{i}"),
-                    value: CustomValue::U32(i as u32),
-                })
-            })
-            .collect();
+        let event_subscription_count = DEFAULT_WS_CONFIG.max_subscriptions_per_connection;
 
         let result = validate_subscription_request(
             false,
-            &event_subscriptions,
+            event_subscription_count,
             "acuity_subscribeStatus",
             DEFAULT_WS_CONFIG.max_subscriptions_per_connection,
         );
@@ -134,16 +122,10 @@ mod tests {
 
     #[test]
     fn validate_subscription_request_allows_duplicate_subscriptions() {
-        let key = Key::Custom(CustomKey {
-            name: "pool_id".into(),
-            value: CustomValue::U32(7),
-        });
-        let event_subscriptions = HashSet::from([key.clone()]);
-
         assert!(
             validate_subscription_request(
                 false,
-                &event_subscriptions,
+                1,
                 "acuity_subscribeEvents",
                 DEFAULT_WS_CONFIG.max_subscriptions_per_connection,
             )
@@ -153,12 +135,7 @@ mod tests {
 
     #[test]
     fn validate_subscription_request_counts_status_and_event_subscriptions_together() {
-        let result = validate_subscription_request(
-            true,
-            &HashSet::new(),
-            "acuity_subscribeEvents",
-            1,
-        );
+        let result = validate_subscription_request(true, 0, "acuity_subscribeEvents", 1);
 
         assert!(
             matches!(result, Err(IndexError::Io(err)) if err.kind() == std::io::ErrorKind::ConnectionAborted)

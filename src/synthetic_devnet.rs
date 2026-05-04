@@ -254,7 +254,12 @@ impl JsonWsClient {
         });
 
         self.send_json(request).await?;
-        recv_json_ws(&mut self.socket).await
+        loop {
+            let message = recv_json_ws(&mut self.socket).await?;
+            if message.get("id").and_then(|id| id.as_u64()) == Some(request_id) {
+                return Ok(message);
+            }
+        }
     }
 
     pub async fn get_events(&mut self, key: Value, limit: u16) -> Result<Value, Box<dyn Error>> {

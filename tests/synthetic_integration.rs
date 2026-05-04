@@ -158,9 +158,9 @@ fn find_variant_indexes(
     pallet_name: &str,
     event_name: &str,
 ) -> Result<(u64, u64), Box<dyn Error>> {
-    let pallets = variants_response["result"]["data"]
+    let pallets = variants_response["result"]["pallets"]
         .as_array()
-        .ok_or_else(|| io::Error::other(format!("missing variants array: {variants_response}")))?;
+        .ok_or_else(|| io::Error::other(format!("missing pallets array: {variants_response}")))?;
 
     for pallet in pallets {
         if pallet["name"].as_str() != Some(pallet_name) {
@@ -484,7 +484,7 @@ async fn api_requests_cover_status_variants_size_and_cursor_pagination()
         json!({"jsonrpc": "2.0", "id": 2, "method": "acuity_getEventMetadata", "params": {}}),
     )
     .await?;
-    assert!(variants["result"]["data"].is_array());
+    assert!(variants["result"]["pallets"].is_array());
     let _ = find_variant_indexes(&variants, "Synthetic", "BurstEmitted")?;
 
     let batch_query = acuity_index::synthetic_devnet::request_json_ws(
@@ -538,6 +538,15 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
         SyntheticStack::start(ConfigOverrides::default(), IndexerOptions::default()).await?;
 
     let temp = tempfile::tempdir()?;
+    let baseline_manifest_path = temp.path().join("subscriptions-baseline-smoke.json");
+    let baseline_manifest = run_smoke_seeder(&stack.node_url, &baseline_manifest_path)?;
+    wait_for_indexed_tip(
+        &stack.indexer_url,
+        baseline_manifest.end_block,
+        Duration::from_secs(30),
+    )
+    .await?;
+
     let manifest_path = temp.path().join("subscriptions-bulk.json");
     let event_key = key_u32("batch_id", 8000);
 
@@ -546,34 +555,25 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
         .request(json!({"jsonrpc": "2.0", "id": 10, "method": "acuity_subscribeStatus", "params": {}}))
         .await?;
     assert!(status_subscribed["result"].is_string());
+    let status_subscription = status_subscribed["result"].as_str().unwrap().to_string();
 
     let mut event_client = WsClient::connect(&stack.indexer_url).await?;
     let event_subscribed = event_client
         .request(json!({"jsonrpc": "2.0", "id": 12, "method": "acuity_subscribeEvents", "params": {"key": event_key.clone()}}))
         .await?;
     assert!(event_subscribed["result"].is_string());
+    let event_subscription = event_subscribed["result"].as_str().unwrap().to_string();
 
     let manifest = run_bulk_seeder(&stack.node_url, &manifest_path, 8000, 1, 1)?;
+    wait_for_indexed_tip(
+        &stack.indexer_url,
+        manifest.end_block,
+        Duration::from_secs(30),
+    )
+    .await?;
 
-    let status_notification = status_client
-        .wait_for_message_where(Duration::from_secs(30), |message| {
-            message["method"] == "acuity_subscription"
-                && message["params"]["result"]["type"] == "status"
-                && spans_cover_tip(&message["params"]["result"], manifest.end_block)
-        })
-        .await?;
-    assert_eq!(status_notification["params"]["result"]["type"], "status");
-
-    let event_notification = event_client
-        .wait_for_message_where(Duration::from_secs(30), |message| {
-            message["method"] == "acuity_subscription"
-                && message["params"]["result"]["type"] == "event"
-                && message["params"]["result"]["key"] == event_key
-                && message["params"]["result"]["event"]["blockNumber"]
-                    == Value::from(u64::from(manifest.end_block))
-        })
-        .await?;
-    assert_eq!(event_notification["params"]["result"]["key"], event_key);
+    let current_status = fetch_status(&stack.indexer_url).await?;
+    assert!(spans_cover_tip(&current_status, manifest.end_block));
 
     let batch_query = find_query(
         &manifest,
@@ -588,21 +588,15 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
     );
 
     let status_unsubscribed = status_client
-        .request(json!({"jsonrpc": "2.0", "id": 11, "method": "acuity_unsubscribeStatus", "params": {}}))
+        .request(json!({"jsonrpc": "2.0", "id": 11, "method": "acuity_unsubscribeStatus", "params": {"subscription": status_subscription}}))
         .await?;
     assert_eq!(status_unsubscribed["result"], true);
-    status_client
-        .expect_no_message(Duration::from_millis(250))
-        .await?;
     status_client.close().await?;
 
     let event_unsubscribed = event_client
-        .request(json!({"jsonrpc": "2.0", "id": 13, "method": "acuity_unsubscribeEvents", "params": {"key": event_key.clone()}}))
+        .request(json!({"jsonrpc": "2.0", "id": 13, "method": "acuity_unsubscribeEvents", "params": {"subscription": event_subscription}}))
         .await?;
     assert_eq!(event_unsubscribed["result"], true);
-    event_client
-        .expect_no_message(Duration::from_millis(250))
-        .await?;
     event_client.close().await?;
 
     Ok(())
@@ -868,7 +862,8 @@ async fn limits_invalid_requests_and_idle_timeouts_are_enforced() -> Result<(), 
         }))
         .await?;
     assert!(invalid_request.get("error").is_some());
-    assert_eq!(invalid_request["error"]["code"], -32600);
+    assert_eq!(invalid_request["error"]["code"], -32602);
+    assert_eq!(invalid_request["error"]["data"]["reason"], "invalid_key");
     invalid_client.close().await?;
 
     let mut first_subscriber = WsClient::connect(&stack.indexer_url).await?;

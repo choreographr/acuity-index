@@ -871,10 +871,12 @@ item_revision = { fields = ["bytes32", "u32"] }
         let indexer = Indexer::new_test(trees, &config);
 
         let (tx, mut rx) = mpsc::channel(1);
+        let status_sub_id = "sub_status_1".to_string();
         process_sub_msg(
             indexer.runtime_state(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::SubscribeStatus {
+                subscription_id: status_sub_id.clone(),
                 tx: tx.clone(),
                 response_tx: None,
             },
@@ -887,7 +889,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::UnsubscribeStatus {
-                tx,
+                subscription_id: status_sub_id,
                 response_tx: None,
             },
         )
@@ -904,11 +906,13 @@ item_revision = { fields = ["bytes32", "u32"] }
 
         let key = u32_key("ref_index", 42);
         let (tx, mut rx) = mpsc::channel(1);
+        let event_sub_id = "sub_event_1".to_string();
 
         process_sub_msg(
             indexer.runtime_state(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::SubscribeEvents {
+                subscription_id: event_sub_id.clone(),
                 key: key.clone(),
                 tx: tx.clone(),
                 response_tx: None,
@@ -917,24 +921,24 @@ item_revision = { fields = ["bytes32", "u32"] }
         .unwrap();
 
         indexer.index_event_key(key.clone(), 7, 1).unwrap();
-        assert!(matches!(
-            tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await,
-            Ok(None) | Err(_)
-        ));
+        let first = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(first.params.subscription, event_sub_id);
+        assert!(matches!(first.params.result, NotificationResult::Event { .. }));
         assert!(indexer
             .runtime_state()
-            .events_subs
+            .subscriptions
             .lock()
             .unwrap()
-            .get(&key)
-            .is_none());
+            .contains_key(&event_sub_id));
 
         process_sub_msg(
             indexer.runtime_state(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::UnsubscribeEvents {
-                key,
-                tx,
+                subscription_id: event_sub_id,
                 response_tx: None,
             },
         )
@@ -957,6 +961,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::SubscribeStatus {
+                subscription_id: "sub_status_slow".into(),
                 tx,
                 response_tx: None,
             },
@@ -967,6 +972,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         indexer.notify_status_subscribers();
 
         let first = rx.recv().await.unwrap();
+        assert_eq!(first.params.subscription, "sub_status_slow");
         assert!(matches!(first.params.result, NotificationResult::Status { .. }));
         assert!(rx.try_recv().is_err());
 
@@ -982,10 +988,12 @@ item_revision = { fields = ["bytes32", "u32"] }
 
         let key = u32_key("ref_index", 42);
         let (tx, mut rx) = mpsc::channel(1);
+        let slow_event_sub_id = "sub_event_slow".to_string();
         process_sub_msg(
             indexer.runtime_state(),
             &live_ws_config(WsConfig::default().max_total_subscriptions),
             SubscriptionMessage::SubscribeEvents {
+                subscription_id: slow_event_sub_id.clone(),
                 key: key.clone(),
                 tx,
                 response_tx: None,
@@ -996,17 +1004,18 @@ item_revision = { fields = ["bytes32", "u32"] }
         indexer.index_event_key(key.clone(), 7, 1).unwrap();
         indexer.index_event_key(key.clone(), 8, 2).unwrap();
 
-        assert!(matches!(
-            tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await,
-            Ok(None)
-        ));
-        assert!(indexer
+        let first = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(first.params.subscription, slow_event_sub_id);
+        assert!(matches!(first.params.result, NotificationResult::Event { .. }));
+        assert!(!indexer
             .runtime_state()
-            .events_subs
+            .subscriptions
             .lock()
             .unwrap()
-            .get(&key)
-            .is_none());
+            .contains_key(&slow_event_sub_id));
 
         indexer.index_event_key(key, 9, 3).unwrap();
         assert!(rx.try_recv().is_err());
@@ -1054,6 +1063,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(3),
             SubscriptionMessage::SubscribeStatus {
+                subscription_id: "sub_limit_1".into(),
                 tx: tx1,
                 response_tx: None,
             },
@@ -1064,6 +1074,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(3),
             SubscriptionMessage::SubscribeStatus {
+                subscription_id: "sub_limit_2".into(),
                 tx: tx2,
                 response_tx: None,
             },
@@ -1076,6 +1087,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(3),
             SubscriptionMessage::SubscribeEvents {
+                subscription_id: "sub_limit_3".into(),
                 key: key.clone(),
                 tx: tx3,
                 response_tx: None,
@@ -1088,6 +1100,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(3),
             SubscriptionMessage::SubscribeStatus {
+                subscription_id: "sub_limit_4".into(),
                 tx: tx4.clone(),
                 response_tx: None,
             },
@@ -1104,6 +1117,7 @@ item_revision = { fields = ["bytes32", "u32"] }
             indexer.runtime_state(),
             &live_ws_config(3),
             SubscriptionMessage::SubscribeEvents {
+                subscription_id: "sub_limit_5".into(),
                 key: u32_key("ref_index", 2),
                 tx: tx5.clone(),
                 response_tx: None,
