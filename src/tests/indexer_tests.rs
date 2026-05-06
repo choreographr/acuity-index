@@ -934,10 +934,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         .unwrap();
 
         indexer.index_event_key(key.clone(), EventRef { block_number: 7, event_index: 1 }, sample_decoded_event(7, 1)).unwrap();
-        let first = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
-            .await
-            .unwrap()
-            .unwrap();
+        let first = rx.recv().await.unwrap();
         assert_eq!(first.params.subscription, event_sub_id);
         assert!(matches!(first.params.result, NotificationResult::Event { .. }));
         assert!(indexer
@@ -1017,10 +1014,7 @@ item_revision = { fields = ["bytes32", "u32"] }
         indexer.index_event_key(key.clone(), EventRef { block_number: 7, event_index: 1 }, sample_decoded_event(7, 1)).unwrap();
         indexer.index_event_key(key.clone(), EventRef { block_number: 8, event_index: 2 }, sample_decoded_event(8, 2)).unwrap();
 
-        let first = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
-            .await
-            .unwrap()
-            .unwrap();
+        let first = rx.recv().await.unwrap();
         assert_eq!(first.params.subscription, slow_event_sub_id);
         assert!(matches!(first.params.result, NotificationResult::Event { .. }));
         assert!(!indexer

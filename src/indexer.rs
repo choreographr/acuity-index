@@ -1974,10 +1974,7 @@ events = [
             )
             .unwrap();
 
-        let notification = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
-            .await
-            .unwrap()
-            .unwrap();
+        let notification = rx.recv().await.unwrap();
         match notification.params.result {
             NotificationResult::Event { decoded_event, .. } => {
                 let decoded_event = decoded_event.expect("decoded event should be present");
@@ -2036,10 +2033,7 @@ events = [
             )
             .unwrap();
 
-        let notification = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv())
-            .await
-            .unwrap()
-            .unwrap();
+        let notification = rx.recv().await.unwrap();
         match notification.params.result {
             NotificationResult::Event { decoded_event, .. } => {
                 let decoded_event = decoded_event.expect("decoded event should be present");

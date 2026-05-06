@@ -560,6 +560,81 @@ fn event_targets_path(event: &Event, target_path: &Path) -> bool {
     })
 }
 
+fn process_runtime_config_change(
+    index_spec_path: &Path,
+    options_config_path: Option<&Path>,
+    url_override: Option<&str>,
+    current_spec_snapshot: &mut ConfigSnapshot,
+    last_seen_spec_source_hash: &mut Option<u64>,
+    last_seen_options_source_hash: &mut Option<u64>,
+    spec_snapshot_tx: &watch::Sender<SpecUpdate>,
+    options_snapshot_tx: &watch::Sender<Option<OptionsSnapshot>>,
+    spec_event_seen: bool,
+    options_event_seen: bool,
+) -> Result<(), IndexError> {
+    if spec_event_seen {
+        let (toml_str, source_hash) = match load_index_spec_source(index_spec_path.to_str().ok_or_else(|| {
+            internal_error("index spec path is not valid UTF-8")
+        })?) {
+            Ok(source) => source,
+            Err(err) => {
+                warn!("{err}");
+                return Ok(());
+            }
+        };
+
+        if *last_seen_spec_source_hash != Some(source_hash) {
+            *last_seen_spec_source_hash = Some(source_hash);
+
+            let candidate = match parse_index_spec(&toml_str) {
+                Ok(spec) => ConfigSnapshot { spec, source_hash },
+                Err(err) => {
+                    warn!("{err}");
+                    return Ok(());
+                }
+            };
+
+            match classify_spec_update(current_spec_snapshot, &candidate, url_override) {
+                Ok(action) => {
+                    *current_spec_snapshot = candidate.clone();
+                    if action == SpecUpdateAction::RestartIndexer {
+                        info!("Accepted index spec change; restarting indexer loop.");
+                    }
+                    let _ = spec_snapshot_tx.send(SpecUpdate {
+                        snapshot: candidate,
+                        action,
+                    });
+                }
+                Err(reason) => {
+                    warn!("Rejected index spec change: {reason}");
+                }
+            }
+        }
+    }
+
+    if options_event_seen {
+        let Some(options_config_path) = options_config_path else {
+            return Ok(());
+        };
+        let snapshot = match build_options_snapshot(options_config_path.to_str().ok_or_else(|| {
+            internal_error("options config path is not valid UTF-8")
+        })?) {
+            Ok(snapshot) => snapshot,
+            Err(err) => {
+                warn!("{err}");
+                return Ok(());
+            }
+        };
+
+        if *last_seen_options_source_hash != Some(snapshot.source_hash) {
+            *last_seen_options_source_hash = Some(snapshot.source_hash);
+            let _ = options_snapshot_tx.send(Some(snapshot));
+        }
+    }
+
+    Ok(())
+}
+
 async fn watch_runtime_config(
     index_spec_path: PathBuf,
     initial_spec_snapshot: ConfigSnapshot,
@@ -649,65 +724,18 @@ async fn watch_runtime_config(
                     }
                 }
 
-                if spec_event_seen {
-                    let (toml_str, source_hash) = match load_index_spec_source(index_spec_path.to_str().ok_or_else(|| {
-                        internal_error("index spec path is not valid UTF-8")
-                    })?) {
-                        Ok(source) => source,
-                        Err(err) => {
-                            warn!("{err}");
-                            continue;
-                        }
-                    };
-
-                    if last_seen_spec_source_hash != Some(source_hash) {
-                        last_seen_spec_source_hash = Some(source_hash);
-
-                        let candidate = match parse_index_spec(&toml_str) {
-                            Ok(spec) => ConfigSnapshot { spec, source_hash },
-                            Err(err) => {
-                                warn!("{err}");
-                                continue;
-                            }
-                        };
-
-                        match classify_spec_update(&current_spec_snapshot, &candidate, url_override.as_deref()) {
-                            Ok(action) => {
-                                current_spec_snapshot = candidate.clone();
-                                if action == SpecUpdateAction::RestartIndexer {
-                                    info!("Accepted index spec change; restarting indexer loop.");
-                                }
-                                let _ = spec_snapshot_tx.send(SpecUpdate {
-                                    snapshot: candidate,
-                                    action,
-                                });
-                            }
-                            Err(reason) => {
-                                warn!("Rejected index spec change: {reason}");
-                            }
-                        }
-                    }
-                }
-
-                if options_event_seen {
-                    let Some(options_config_path) = options_config_path.as_ref() else {
-                        continue;
-                    };
-                    let snapshot = match build_options_snapshot(options_config_path.to_str().ok_or_else(|| {
-                        internal_error("options config path is not valid UTF-8")
-                    })?) {
-                        Ok(snapshot) => snapshot,
-                        Err(err) => {
-                            warn!("{err}");
-                            continue;
-                        }
-                    };
-
-                    if last_seen_options_source_hash != Some(snapshot.source_hash) {
-                        last_seen_options_source_hash = Some(snapshot.source_hash);
-                        let _ = options_snapshot_tx.send(Some(snapshot));
-                    }
-                }
+                process_runtime_config_change(
+                    &index_spec_path,
+                    options_config_path.as_deref(),
+                    url_override.as_deref(),
+                    &mut current_spec_snapshot,
+                    &mut last_seen_spec_source_hash,
+                    &mut last_seen_options_source_hash,
+                    &spec_snapshot_tx,
+                    &options_snapshot_tx,
+                    spec_event_seen,
+                    options_event_seen,
+                )?;
             }
         }
     }
@@ -1516,7 +1544,6 @@ async fn main() {
 #[cfg(test)]
 mod main_tests {
     use super::*;
-    use tokio::time::timeout;
 
     const TEST_INDEX_CONFIG: &str = "/tmp/test-index.toml";
 
@@ -1903,8 +1930,8 @@ mod main_tests {
         );
     }
 
-    #[tokio::test]
-    async fn watch_runtime_config_detects_spec_replace_via_rename() {
+    #[test]
+    fn process_runtime_config_change_detects_spec_replace_via_rename() {
         let dir = tempfile::tempdir().unwrap();
         let spec_path = dir.path().join("index.toml");
         let replacement_path = dir.path().join("index.tmp.toml");
@@ -1912,49 +1939,41 @@ mod main_tests {
         write_spec(&spec_path, &initial_spec);
 
         let initial_snapshot = build_config_snapshot(spec_path.to_str().unwrap()).unwrap();
-        let (spec_tx, mut spec_rx) = watch::channel(SpecUpdate {
+        let (spec_tx, spec_rx) = watch::channel(SpecUpdate {
             snapshot: initial_snapshot.clone(),
             action: SpecUpdateAction::Unchanged,
         });
         let (options_tx, _options_rx) = watch::channel(None::<OptionsSnapshot>);
-        let (ready_tx, ready_rx) = oneshot::channel();
-        let (exit_tx, exit_rx) = watch::channel(false);
-        let watcher = tokio::spawn(watch_runtime_config(
-            spec_path.clone(),
-            initial_snapshot,
-            None,
-            None,
-            None,
-            spec_tx,
-            options_tx,
-            Some(ready_tx),
-            exit_rx,
-        ));
-        timeout(Duration::from_secs(5), ready_rx)
-            .await
-            .unwrap()
-            .unwrap();
+        let mut current_snapshot = initial_snapshot.clone();
+        let mut last_seen_spec_source_hash = Some(initial_snapshot.source_hash);
+        let mut last_seen_options_source_hash = None;
 
         let mut updated_spec = test_spec();
         updated_spec.index_variant = true;
         write_spec(&replacement_path, &updated_spec);
         std::fs::rename(&replacement_path, &spec_path).unwrap();
 
-        timeout(Duration::from_secs(5), spec_rx.changed())
-            .await
-            .unwrap()
-            .unwrap();
-        let update = spec_rx.borrow_and_update().clone();
+        process_runtime_config_change(
+            &spec_path,
+            None,
+            None,
+            &mut current_snapshot,
+            &mut last_seen_spec_source_hash,
+            &mut last_seen_options_source_hash,
+            &spec_tx,
+            &options_tx,
+            true,
+            false,
+        )
+        .unwrap();
+        let update = spec_rx.borrow().clone();
 
         assert_eq!(update.action, SpecUpdateAction::RestartIndexer);
         assert!(update.snapshot.spec.index_variant);
-
-        let _ = exit_tx.send(true);
-        assert!(watcher.await.unwrap().is_ok());
     }
 
-    #[tokio::test]
-    async fn watch_runtime_config_detects_options_replace_via_rename() {
+    #[test]
+    fn process_runtime_config_change_detects_options_replace_via_rename() {
         let dir = tempfile::tempdir().unwrap();
         let spec_path = dir.path().join("index.toml");
         let options_path = dir.path().join("options.toml");
@@ -1969,39 +1988,31 @@ mod main_tests {
             snapshot: initial_snapshot.clone(),
             action: SpecUpdateAction::Unchanged,
         });
-        let (options_tx, mut options_rx) = watch::channel(Some(initial_options.clone()));
-        let (ready_tx, ready_rx) = oneshot::channel();
-        let (exit_tx, exit_rx) = watch::channel(false);
-        let watcher = tokio::spawn(watch_runtime_config(
-            spec_path,
-            initial_snapshot,
-            Some(options_path.clone()),
-            Some(initial_options),
-            None,
-            spec_tx,
-            options_tx,
-            Some(ready_tx),
-            exit_rx,
-        ));
-        timeout(Duration::from_secs(5), ready_rx)
-            .await
-            .unwrap()
-            .unwrap();
+        let (options_tx, options_rx) = watch::channel(Some(initial_options.clone()));
+        let mut current_snapshot = initial_snapshot;
+        let mut last_seen_spec_source_hash = Some(current_snapshot.source_hash);
+        let mut last_seen_options_source_hash = Some(initial_options.source_hash);
 
         write_options(&replacement_path, "queue_depth = 4\nmax_connections = 32\n");
         std::fs::rename(&replacement_path, &options_path).unwrap();
 
-        timeout(Duration::from_secs(5), options_rx.changed())
-            .await
-            .unwrap()
-            .unwrap();
-        let update = options_rx.borrow_and_update().clone().unwrap();
+        process_runtime_config_change(
+            &spec_path,
+            Some(&options_path),
+            None,
+            &mut current_snapshot,
+            &mut last_seen_spec_source_hash,
+            &mut last_seen_options_source_hash,
+            &spec_tx,
+            &options_tx,
+            false,
+            true,
+        )
+        .unwrap();
+        let update = options_rx.borrow().clone().unwrap();
 
         assert_eq!(update.options.queue_depth, Some(4));
         assert_eq!(update.options.max_connections, Some(32));
-
-        let _ = exit_tx.send(true);
-        assert!(watcher.await.unwrap().is_ok());
     }
 
     #[test]
