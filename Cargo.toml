@@ -8,9 +8,23 @@ homepage = "https://index.acuity.network/"
 repository = "https://github.com/acuity-network/acuity-index"
 license = "Apache-2.0"
 
+[features]
+default = []
+synthetic-tools = []
+
 [[bin]]
 name = "acuity-index"
 path = "src/main.rs"
+
+[[bin]]
+name = "benchmark_synthetic_indexing"
+path = "src/bin/benchmark_synthetic_indexing.rs"
+required-features = ["synthetic-tools"]
+
+[[bin]]
+name = "seed_synthetic_runtime"
+path = "src/bin/seed_synthetic_runtime.rs"
+required-features = ["synthetic-tools"]
 
 [dependencies]
 ahash = "0.8"
