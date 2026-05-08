@@ -386,6 +386,7 @@ impl Indexer {
         let FetchedBlock {
             block_number,
             spec_version,
+            timestamp,
             events,
         } = fetched;
 
@@ -436,6 +437,7 @@ impl Indexer {
             let decoded_event = DecodedEvent {
                 block_number,
                 event_index,
+                timestamp,
                 event: encode_hydrated_event_value(
                     spec_version,
                     pallet_name,
@@ -1963,6 +1965,7 @@ events = [
                 DecodedEvent {
                     block_number: 7,
                     event_index: 3,
+                    timestamp: 1_700_000_000_007,
                     event: serde_json::json!({
                         "specVersion": 1,
                         "palletName": "Content",
@@ -1978,6 +1981,7 @@ events = [
             NotificationResult::Event { event, .. } => {
                 assert_eq!(event.block_number, 7);
                 assert_eq!(event.event_index, 3);
+                assert_eq!(event.timestamp, 1_700_000_000_007);
                 assert_eq!(event.event["eventName"], "PublishRevision");
             }
             other => panic!("expected event notification, got {other:?}"),
@@ -2021,6 +2025,7 @@ events = [
                 DecodedEvent {
                     block_number: 9,
                     event_index: 2,
+                    timestamp: 1_700_000_000_009,
                     event: serde_json::json!({
                         "specVersion": 1,
                         "palletName": "System",
@@ -2036,6 +2041,7 @@ events = [
             NotificationResult::Event { event, .. } => {
                 assert_eq!(event.block_number, 9);
                 assert_eq!(event.event_index, 2);
+                assert_eq!(event.timestamp, 1_700_000_000_009);
                 assert_eq!(event.event["eventName"], "SomethingHappened");
             }
             other => panic!("expected event notification, got {other:?}"),

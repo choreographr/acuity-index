@@ -102,6 +102,7 @@ Example:
       "event": {
         "blockNumber": 50,
         "eventIndex": 3,
+        "timestamp": 1717171717000,
         "event": {
           "specVersion": 1234,
           "palletName": "Referenda",
@@ -265,6 +266,7 @@ Each event in `events` contains:
 
 - `blockNumber`: `u32`
 - `eventIndex`: zero-based `u32` ordinal within the block
+- `timestamp`: block timestamp in milliseconds since Unix epoch, from `Timestamp::Now` when available; `0` for blocks where that storage value is unavailable
 - `event`: decoded event JSON
 
 Decoded event JSON currently contains:
@@ -289,6 +291,7 @@ Example:
       {
         "blockNumber": 50,
         "eventIndex": 3,
+        "timestamp": 1717171717000,
         "event": {
           "specVersion": 1234,
           "palletName": "Referenda",
@@ -342,6 +345,7 @@ Example when proofs are unavailable (indexer not in finalized mode):
     "events": [{
       "blockNumber": 50,
       "eventIndex": 3,
+      "timestamp": 1717171717000,
       "event": {
         "specVersion": 1234,
         "palletName": "Referenda",
@@ -511,6 +515,7 @@ Example:
       "event": {
         "blockNumber": 50,
         "eventIndex": 3,
+        "timestamp": 1717171717000,
         "event": {
           "specVersion": 1234,
           "palletName": "Referenda",
@@ -689,6 +694,8 @@ Hydrated event payloads are fetched from the node on demand for:
 
 - `acuity_getEvents` responses
 - event subscription notifications
+
+Hydration also reads `Timestamp::Now` for each returned block so every hydrated event includes a top-level `timestamp` field. For rare blocks where `Timestamp::Now` is unavailable, the API returns `timestamp: 0` instead of failing the request.
 
 The API always returns hydrated events for these surfaces, so live node access is required to serve them.
 

@@ -462,6 +462,7 @@ mod shared_tests {
             events: vec![DecodedEvent {
                 block_number: 10,
                 event_index: 2,
+                timestamp: 1_700_000_000_000,
                 event: serde_json::json!({
                     "specVersion": 1234,
                     "eventName": "Deposit"
@@ -483,6 +484,7 @@ mod shared_tests {
         assert!(json.contains("\"events\""));
         assert!(json.contains("specVersion"));
         assert!(json.contains("Deposit"));
+        assert!(json.contains("timestamp"));
     }
 
     #[test]

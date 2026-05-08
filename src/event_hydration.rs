@@ -17,6 +17,7 @@ use crate::{
 pub(crate) struct FetchedBlock {
     pub(crate) block_number: u32,
     pub(crate) spec_version: u32,
+    pub(crate) timestamp: u64,
     pub(crate) events: Events<PolkadotConfig>,
 }
 
@@ -38,11 +39,13 @@ pub(crate) async fn fetch_block_events(
         }
     })?;
     let spec_version = at_block.spec_version();
+    let timestamp = fetch_block_timestamp(rpc, block_hash, block_number).await?;
     let events = at_block.events().fetch().await?;
 
     Ok(FetchedBlock {
         block_number,
         spec_version,
+        timestamp,
         events,
     })
 }
@@ -144,12 +147,45 @@ async fn fetch_event_block_proof(
 }
 
 pub(crate) fn system_events_storage_key() -> [u8; 32] {
-    let system = sp_crypto_hashing::twox_128(b"System");
-    let events = sp_crypto_hashing::twox_128(b"Events");
+    storage_key(b"System", b"Events")
+}
+
+fn timestamp_now_storage_key() -> [u8; 32] {
+    storage_key(b"Timestamp", b"Now")
+}
+
+fn storage_key(pallet: &[u8], entry: &[u8]) -> [u8; 32] {
+    let pallet_hash = sp_crypto_hashing::twox_128(pallet);
+    let entry_hash = sp_crypto_hashing::twox_128(entry);
     let mut res = [0u8; 32];
-    res[..16].copy_from_slice(&system);
-    res[16..].copy_from_slice(&events);
+    res[..16].copy_from_slice(&pallet_hash);
+    res[16..].copy_from_slice(&entry_hash);
     res
+}
+
+async fn fetch_block_timestamp(
+    rpc: &LegacyRpcMethods<RpcConfigFor<PolkadotConfig>>,
+    block_hash: subxt::utils::H256,
+    block_number: u32,
+) -> Result<u64, IndexError> {
+    let storage_key = timestamp_now_storage_key();
+    let Some(storage_value) = rpc.state_get_storage(&storage_key, Some(block_hash)).await? else {
+        return Ok(0);
+    };
+
+    decode_timestamp_storage_value(&storage_value).ok_or_else(|| {
+        internal_error(format!(
+            "invalid Timestamp::Now value at block {block_number}: expected SCALE-encoded u64"
+        ))
+    })
+}
+
+fn decode_timestamp_storage_value(bytes: &[u8]) -> Option<u64> {
+    match bytes.len() {
+        8.. => Some(u64::from_le_bytes(bytes[..8].try_into().ok()?)),
+        4 => Some(u32::from_le_bytes(bytes.try_into().ok()?) as u64),
+        _ => None,
+    }
 }
 
 fn decode_requested_block_events(
@@ -168,7 +204,8 @@ fn decode_requested_block_events(
             continue;
         }
 
-        let decoded_event = decode_event_details(fetched.block_number, fetched.spec_version, &event)?;
+        let decoded_event =
+            decode_event_details(fetched.block_number, fetched.spec_version, fetched.timestamp, &event)?;
         decoded_by_ref.insert((fetched.block_number, event_index), decoded_event);
     }
 
@@ -178,6 +215,7 @@ fn decode_requested_block_events(
 fn decode_event_details(
     block_number: u32,
     spec_version: u32,
+    timestamp: u64,
     event: &Event<PolkadotConfig>,
 ) -> Result<DecodedEvent, IndexError> {
     let event_index = event.index();
@@ -186,6 +224,7 @@ fn decode_event_details(
     Ok(DecodedEvent {
         block_number,
         event_index,
+        timestamp,
         event: encode_event_value(
             spec_version,
             event.pallet_name(),
@@ -258,10 +297,23 @@ mod tests {
     }
 
     #[test]
+    fn decode_timestamp_storage_value_reads_scale_u64() {
+        assert_eq!(decode_timestamp_storage_value(&1234u64.to_le_bytes()), Some(1234));
+    }
+
+    #[test]
     fn system_events_storage_key_matches_substrate_layout() {
         assert_eq!(
             hex::encode(system_events_storage_key()),
             "26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7"
+        );
+    }
+
+    #[test]
+    fn timestamp_now_storage_key_matches_substrate_layout() {
+        assert_eq!(
+            hex::encode(timestamp_now_storage_key()),
+            "f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb"
         );
     }
 }

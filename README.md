@@ -100,10 +100,13 @@ acuity-index <COMMAND>
 Runtime option precedence: **CLI flags > `--options-config` file > built-in defaults**.
 `index_variant` is a top-level index spec field, not a runtime option.
 
-When clients send `acuity_getEvents`, the response always includes a `proofs`
-object. Proofs are only available while the indexer is running with `--finalized`
-indexing; otherwise the response returns `proofs.available: false` with an
-explanatory `proofs.reason` and `proofs.message`.
+When clients send `acuity_getEvents`, each returned event also includes a top-level
+`timestamp` field sourced from the block's `Timestamp::Now` storage value when
+available. For blocks where that storage value is unavailable, the API returns
+`timestamp: 0`. The response always includes a `proofs` object. Proofs are only
+available while the indexer is running with `--finalized` indexing; otherwise the
+response returns `proofs.available: false` with an explanatory `proofs.reason`
+and `proofs.message`.
 
 When `run <INDEX_SPEC>` points to a file, `acuity-index` watches that file for changes.
 Accepted spec edits restart only the RPC/indexer loop; the WebSocket and metrics

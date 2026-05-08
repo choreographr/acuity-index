@@ -501,6 +501,8 @@ impl fmt::Display for EventRef {
 pub struct DecodedEvent {
     pub block_number: u32,
     pub event_index: u32,
+    /// Milliseconds since Unix epoch from `Timestamp::Now` for the containing block.
+    pub timestamp: u64,
     /// JSON object for the decoded event.
     pub event: serde_json::Value,
 }

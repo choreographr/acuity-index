@@ -266,6 +266,11 @@ Operational detail:
 `acuity_getEvents` always reads event refs from sled first, then hydrates decoded event
 payloads from the node for the returned refs.
 
+During hydration it also reads `Timestamp::Now` for each returned block, so each hydrated
+event includes a top-level `timestamp` field in addition to the decoded event JSON. If that
+storage item is unavailable for a block, hydration falls back to `timestamp = 0` instead of
+failing the request or indexing pass.
+
 `src/websockets.rs` also asks `src/event_hydration.rs` for one finalized proof per returned block. Each proof is
 derived from the block header plus a `state_get_read_proof` call for the
 `System.Events` storage item. The response includes a `proofs` object that indicates
@@ -475,7 +480,7 @@ The pattern is:
 
 Decoded events are converted to JSON in `Indexer::encode_event(...)` and `composite_to_json(...)`.
 
-The encoded payload includes:
+The decoded inner event payload includes:
 
 - `specVersion`
 - `palletName`
@@ -484,6 +489,13 @@ The encoded payload includes:
 - `variantIndex`
 - `eventIndex`
 - `fields`
+
+The outer hydrated event object returned by `acuity_getEvents` and event subscriptions also includes:
+
+- `blockNumber`
+- `eventIndex`
+- `timestamp`
+- `event`
 
 Notable encoding choices:
 
@@ -615,7 +627,7 @@ Chain-specific semantic names such as `ref_index` must be declared by the spec a
 
 ## Gotchas
 
-- Do not assume hydrated event payloads are available without node access. Event refs are stored locally, but the `events` returned by `acuity_getEvents` and the `event` payloads sent in event subscription notifications are hydrated from the node on demand.
+- Do not assume hydrated event payloads are available without node access. Event refs are stored locally, but the `events` returned by `acuity_getEvents` and the `event` payloads sent in event subscription notifications are hydrated from the node on demand, including a `Timestamp::Now` lookup for each returned block.
 - Do not assume every decoded field is named. Some event fields are positional and TOML may reference them by stringified index like `"0"`.
 - Do not assume block indexing completes in numeric order. Both backfill and head processing can finish out of order and are stitched together afterward.
 - Do not bypass genesis-hash checks when reusing an existing database path.

@@ -92,6 +92,7 @@ mod indexer_tests {
         DecodedEvent {
             block_number,
             event_index,
+            timestamp: 1_700_000_000_000 + u64::from(block_number),
             event: serde_json::json!({
                 "specVersion": 1,
                 "palletName": "Test",
