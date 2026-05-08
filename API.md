@@ -99,8 +99,7 @@ Example:
     "result": {
       "type": "event",
       "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
-      "event": {"blockNumber": 50, "eventIndex": 3},
-      "decodedEvent": {
+      "event": {
         "blockNumber": 50,
         "eventIndex": 3,
         "event": {
@@ -237,8 +236,7 @@ Composite custom keys use an ordered array of typed values:
 Response payload:
 
 - `key`: the queried key
-- `events`: matching event references, newest first
-- `decodedEvents`: decoded payloads for the returned event refs
+- `events`: matching hydrated events, newest first
 - `proofs`: proof availability and items
 - `page`: pagination cursor information
 
@@ -263,12 +261,7 @@ Each proof item contains:
 - `nextCursor`: cursor for the next page, or `null` if no more results
 - `hasMore`: boolean indicating additional pages exist
 
-Each `EventRef` contains:
-
-- `blockNumber`: `u32`
-- `eventIndex`: zero-based `u32` ordinal within the block
-
-Each `DecodedEvent` contains:
+Each event in `events` contains:
 
 - `blockNumber`: `u32`
 - `eventIndex`: zero-based `u32` ordinal within the block
@@ -293,9 +286,6 @@ Example:
   "result": {
     "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
     "events": [
-      {"blockNumber": 50, "eventIndex": 3}
-    ],
-    "decodedEvents": [
       {
         "blockNumber": 50,
         "eventIndex": 3,
@@ -349,8 +339,21 @@ Example when proofs are unavailable (indexer not in finalized mode):
   "id": 3,
   "result": {
     "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
-    "events": [{"blockNumber": 50, "eventIndex": 3}],
-    "decodedEvents": [],
+    "events": [{
+      "blockNumber": 50,
+      "eventIndex": 3,
+      "event": {
+        "specVersion": 1234,
+        "palletName": "Referenda",
+        "eventName": "Submitted",
+        "palletIndex": 42,
+        "variantIndex": 0,
+        "eventIndex": 3,
+        "fields": {
+          "index": 42
+        }
+      }
+    }],
     "proofs": {
       "available": false,
       "reason": "finalized_proofs_unavailable",
@@ -492,8 +495,7 @@ Sent to event subscribers whenever a matching event is indexed.
 Payload (in `params.result`):
 
 - `key`: subscribed key that matched
-- `event`: matching event reference
-- `decodedEvent`: decoded event object hydrated from the node before delivery, or `null` if hydration is temporarily unavailable at notification time
+- `event`: matching hydrated event object
 
 Example:
 
@@ -506,8 +508,7 @@ Example:
     "result": {
       "type": "event",
       "key": {"type": "Custom", "value": {"name": "item_id", "kind": "bytes32", "value": "0xabc..."}},
-      "event": {"blockNumber": 50, "eventIndex": 3},
-      "decodedEvent": {
+      "event": {
         "blockNumber": 50,
         "eventIndex": 3,
         "event": {
@@ -684,12 +685,12 @@ Composite keys are encoded recursively and must satisfy these protocol-level lim
 
 Index entries store event refs locally in sled.
 
-Decoded event payloads are hydrated from the node on demand for:
+Hydrated event payloads are fetched from the node on demand for:
 
 - `acuity_getEvents` responses
 - event subscription notifications
 
-This keeps the JSON-RPC shape unchanged while making decoded payload availability depend on live node access.
+The API always returns hydrated events for these surfaces, so live node access is required to serve them.
 
 ## Delivery and Backpressure
 

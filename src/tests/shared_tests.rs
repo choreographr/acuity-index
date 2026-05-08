@@ -459,11 +459,7 @@ mod shared_tests {
                 name: "ref_index".into(),
                 value: CustomValue::U32(42),
             }),
-            events: vec![EventRef {
-                block_number: 10,
-                event_index: 2,
-            }],
-            decoded_events: vec![DecodedEvent {
+            events: vec![DecodedEvent {
                 block_number: 10,
                 event_index: 2,
                 event: serde_json::json!({
@@ -484,7 +480,7 @@ mod shared_tests {
         };
 
         let json = serde_json::to_string(&result).unwrap();
-        assert!(json.contains("decodedEvents"));
+        assert!(json.contains("\"events\""));
         assert!(json.contains("specVersion"));
         assert!(json.contains("Deposit"));
     }
@@ -497,7 +493,6 @@ mod shared_tests {
                 value: CustomValue::U32(42),
             }),
             events: vec![],
-            decoded_events: vec![],
             proofs: ProofsResult {
                 available: false,
                 reason: REASON_FINALIZED_PROOFS_UNAVAILABLE.into(),

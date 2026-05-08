@@ -564,7 +564,7 @@ impl Indexer {
         decoded_event: DecodedEvent,
     ) -> Result<(), IndexError> {
         key.write_db_key(&self.trees, event_ref.block_number, event_ref.event_index)?;
-        self.notify_event_subscribers(key, event_ref, decoded_event);
+        self.notify_event_subscribers(key, decoded_event);
         Ok(())
     }
 
@@ -592,7 +592,7 @@ impl Indexer {
         }
     }
 
-    fn notify_event_subscribers(&self, key: Key, event_ref: EventRef, decoded_event: DecodedEvent) {
+    fn notify_event_subscribers(&self, key: Key, decoded_event: DecodedEvent) {
         let subscription_ids: Vec<String> = {
             let subs = lock_or_recover(&self.runtime.subscriptions, "subscriptions");
             subs.iter()
@@ -614,8 +614,7 @@ impl Indexer {
                     subscription: subscription_id.clone(),
                     result: NotificationResult::Event {
                         key: key.clone(),
-                        event: event_ref.clone(),
-                        decoded_event: Some(decoded_event.clone()),
+                        event: decoded_event.clone(),
                     },
                 },
             };
@@ -1976,11 +1975,10 @@ events = [
 
         let notification = rx.recv().await.unwrap();
         match notification.params.result {
-            NotificationResult::Event { decoded_event, .. } => {
-                let decoded_event = decoded_event.expect("decoded event should be present");
-                assert_eq!(decoded_event.block_number, 7);
-                assert_eq!(decoded_event.event_index, 3);
-                assert_eq!(decoded_event.event["eventName"], "PublishRevision");
+            NotificationResult::Event { event, .. } => {
+                assert_eq!(event.block_number, 7);
+                assert_eq!(event.event_index, 3);
+                assert_eq!(event.event["eventName"], "PublishRevision");
             }
             other => panic!("expected event notification, got {other:?}"),
         }
@@ -2035,11 +2033,10 @@ events = [
 
         let notification = rx.recv().await.unwrap();
         match notification.params.result {
-            NotificationResult::Event { decoded_event, .. } => {
-                let decoded_event = decoded_event.expect("decoded event should be present");
-                assert_eq!(decoded_event.block_number, 9);
-                assert_eq!(decoded_event.event_index, 2);
-                assert_eq!(decoded_event.event["eventName"], "SomethingHappened");
+            NotificationResult::Event { event, .. } => {
+                assert_eq!(event.block_number, 9);
+                assert_eq!(event.event_index, 2);
+                assert_eq!(event.event["eventName"], "SomethingHappened");
             }
             other => panic!("expected event notification, got {other:?}"),
         }

@@ -495,7 +495,7 @@ impl fmt::Display for EventRef {
     }
 }
 
-/// A decoded event payload associated with an event ref.
+/// A hydrated event payload.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DecodedEvent {
@@ -725,8 +725,7 @@ pub struct PageResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetEventsResult {
     pub key: Key,
-    pub events: Vec<EventRef>,
-    pub decoded_events: Vec<DecodedEvent>,
+    pub events: Vec<DecodedEvent>,
     pub proofs: ProofsResult,
     pub page: PageResult,
 }
@@ -755,9 +754,7 @@ pub enum NotificationResult {
     },
     Event {
         key: Key,
-        event: EventRef,
-        #[serde(rename = "decodedEvent")]
-        decoded_event: Option<DecodedEvent>,
+        event: DecodedEvent,
     },
     Terminated {
         reason: String,

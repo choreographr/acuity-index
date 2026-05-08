@@ -520,7 +520,7 @@ These are answered directly from sled or RPC in `process_msg(...)`:
 - `acuity_getEventMetadata`
 - `acuity_getEvents { key }`
 
-`acuity_getEvents` reads matching event refs from sled, then hydrates `decodedEvents` from the node before responding.
+`acuity_getEvents` reads matching event refs from sled, then hydrates the returned `events` from the node before responding.
 
 Operational detail:
 
@@ -615,7 +615,7 @@ Chain-specific semantic names such as `ref_index` must be declared by the spec a
 
 ## Gotchas
 
-- Do not assume decoded event payloads are available without node access. Event refs are stored locally, but decoded payloads for `acuity_getEvents` and event subscription notifications are hydrated from the node on demand.
+- Do not assume hydrated event payloads are available without node access. Event refs are stored locally, but the `events` returned by `acuity_getEvents` and the `event` payloads sent in event subscription notifications are hydrated from the node on demand.
 - Do not assume every decoded field is named. Some event fields are positional and TOML may reference them by stringified index like `"0"`.
 - Do not assume block indexing completes in numeric order. Both backfill and head processing can finish out of order and are stitched together afterward.
 - Do not bypass genesis-hash checks when reusing an existing database path.

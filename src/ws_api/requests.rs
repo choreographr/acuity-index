@@ -99,7 +99,7 @@ pub(crate) async fn build_get_events_result(
         None
     };
 
-    let decoded_events = hydrate_event_refs(api, rpc, &event_refs).await?;
+    let events = hydrate_event_refs(api, rpc, &event_refs).await?;
 
     // Always attempt proof inclusion
     let proofs = if !runtime.finalized_mode() {
@@ -133,8 +133,7 @@ pub(crate) async fn build_get_events_result(
 
     Ok(GetEventsResult {
         key,
-        events: event_refs,
-        decoded_events,
+        events,
         proofs,
         page: PageResult {
             next_cursor,

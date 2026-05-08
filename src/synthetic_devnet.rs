@@ -344,7 +344,7 @@ pub fn events_len(response: &Value) -> usize {
 }
 
 pub fn decoded_event_names(response: &Value) -> Vec<String> {
-    response["result"]["decodedEvents"]
+    response["result"]["events"]
         .as_array()
         .into_iter()
         .flatten()

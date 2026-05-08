@@ -47,9 +47,9 @@ fn response_decoded_event<'a>(
     block_number: u64,
     event_index: u64,
 ) -> Result<&'a Value, Box<dyn Error>> {
-    response["result"]["decodedEvents"]
+    response["result"]["events"]
         .as_array()
-        .ok_or_else(|| io::Error::other(format!("missing decodedEvents array in response: {response}")))?
+        .ok_or_else(|| io::Error::other(format!("missing events array in response: {response}")))?
         .iter()
         .find(|event| {
             event["blockNumber"].as_u64() == Some(block_number)
@@ -57,7 +57,7 @@ fn response_decoded_event<'a>(
         })
         .ok_or_else(|| {
             io::Error::other(format!(
-                "missing decoded event #{block_number}:{event_index} in response: {response}"
+                "missing event #{block_number}:{event_index} in response: {response}"
             ))
             .into()
         })
@@ -583,7 +583,7 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
         wait_for_query_expectation(&stack.indexer_url, batch_query, Duration::from_secs(30))
             .await?;
     assert_eq!(
-        indexed_batch["result"]["decodedEvents"][0]["event"]["eventName"],
+        indexed_batch["result"]["events"][0]["event"]["eventName"],
         "BurstEmitted"
     );
 
@@ -595,23 +595,17 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
         })
         .await?;
     assert_eq!(event_notification["params"]["result"]["key"], event_key);
-    let decoded = &event_notification["params"]["result"]["decodedEvent"];
+    let event = &event_notification["params"]["result"]["event"];
     assert!(
-        decoded.is_object(),
-        "expected decodedEvent object in subscription notification: {event_notification}"
+        event.is_object(),
+        "expected event object in subscription notification: {event_notification}"
     );
-    assert_eq!(
-        decoded["blockNumber"],
-        event_notification["params"]["result"]["event"]["blockNumber"]
-    );
-    assert_eq!(
-        decoded["eventIndex"],
-        event_notification["params"]["result"]["event"]["eventIndex"]
-    );
-    assert_eq!(decoded["event"]["palletName"], "Synthetic");
-    assert_eq!(decoded["event"]["eventName"], "BurstEmitted");
-    assert_eq!(decoded["event"]["fields"]["batch_id"], "8000");
-    assert_eq!(decoded["event"]["fields"]["seq"], "0");
+    assert!(event["blockNumber"].is_u64());
+    assert!(event["eventIndex"].is_u64());
+    assert_eq!(event["event"]["palletName"], "Synthetic");
+    assert_eq!(event["event"]["eventName"], "BurstEmitted");
+    assert_eq!(event["event"]["fields"]["batch_id"], "8000");
+    assert_eq!(event["event"]["fields"]["seq"], "0");
 
     let status_unsubscribed = status_client
         .request(json!({"jsonrpc": "2.0", "id": 11, "method": "acuity_unsubscribeStatus", "params": {"subscription": status_subscription}}))
@@ -678,22 +672,14 @@ async fn live_event_subscription_notifications_include_decoded_event() -> Result
         .await?;
 
     assert_eq!(notification["params"]["result"]["key"], event_key);
-    assert!(notification["params"]["result"]["event"]["blockNumber"].is_u64());
-    assert!(notification["params"]["result"]["event"]["eventIndex"].is_u64());
-    let decoded = &notification["params"]["result"]["decodedEvent"];
-    assert!(decoded.is_object(), "expected decodedEvent object: {notification}");
-    assert_eq!(
-        decoded["blockNumber"],
-        notification["params"]["result"]["event"]["blockNumber"]
-    );
-    assert_eq!(
-        decoded["eventIndex"],
-        notification["params"]["result"]["event"]["eventIndex"]
-    );
-    assert_eq!(decoded["event"]["palletName"], "Synthetic");
-    assert_eq!(decoded["event"]["eventName"], "BurstEmitted");
-    assert_eq!(decoded["event"]["fields"]["batch_id"], "8100");
-    assert_eq!(decoded["event"]["fields"]["seq"], "0");
+    let event = &notification["params"]["result"]["event"];
+    assert!(event.is_object(), "expected event object: {notification}");
+    assert!(event["blockNumber"].is_u64());
+    assert!(event["eventIndex"].is_u64());
+    assert_eq!(event["event"]["palletName"], "Synthetic");
+    assert_eq!(event["event"]["eventName"], "BurstEmitted");
+    assert_eq!(event["event"]["fields"]["batch_id"], "8100");
+    assert_eq!(event["event"]["fields"]["seq"], "0");
 
     let unsubscribed = event_client
         .request(json!({
