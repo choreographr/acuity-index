@@ -25,6 +25,13 @@ release-checks:
 release level='patch':
     cargo release "{{level}}" --execute
 
+release-notes tag='':
+    if [[ -n "{{tag}}" ]]; then \
+      python scripts/extract-release-notes.py "{{tag}}"; \
+    else \
+      python scripts/extract-release-notes.py; \
+    fi
+
 book-build:
     command -v mdbook >/dev/null
     mdbook build book

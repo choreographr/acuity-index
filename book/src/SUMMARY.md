@@ -4,7 +4,6 @@
 - [Problem](./problem.md)
 - [Solution](./solution.md)
 - [Features](./features.md)
-- [Changelog](./changelog.md)
 - [Installation](./installation.md)
 - [Quickstart](./quickstart.md)
 - [Configuration](./configuration.md)

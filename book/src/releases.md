@@ -44,6 +44,25 @@ just release-checks
 If any step fails, the release stops before the version is bumped, before a tag
 is created, and before anything is published.
 
+## Updating The Changelog
+
+Before running the release command, update the canonical repository changelog in
+`CHANGELOG.md` and commit it. The GitHub release workflow publishes the matching
+version section from that file as the release notes.
+
+You can preview exactly what GitHub will publish with:
+
+```bash
+just release-notes
+just release-notes v0.8.0
+```
+
+That helper reads `CHANGELOG.md` and extracts the section whose heading starts
+with `## v<version>`.
+
+The book no longer owns the release history; if you want a book-visible entry
+point, keep `book/src/changelog.md` as a short pointer back to `CHANGELOG.md`.
+
 ## Creating A Release
 
 Run one of:
@@ -86,8 +105,9 @@ The tag workflow only:
 
 1. plans the dist build
 2. builds the configured release artifacts
-3. creates or updates the GitHub Release
-4. uploads archives and checksum files
+3. extracts the matching tagged section from `CHANGELOG.md`
+4. creates or updates the GitHub Release with those release notes
+5. uploads archives and checksum files
 
 The current dist configuration builds release artifacts for:
 

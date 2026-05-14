@@ -16,6 +16,7 @@ Start there for mixed operator, contributor, and internals documentation:
 
 Detailed source documents remain available too:
 
+- changelog: [`CHANGELOG.md`](./CHANGELOG.md)
 - implementation overview: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 - WebSocket protocol reference: [`API.md`](./API.md)
 - security review and deployment guidance: [`SECURITY.md`](./SECURITY.md)
