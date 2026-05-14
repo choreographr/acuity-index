@@ -1,62 +1,119 @@
 # Security Review
 
-This document summarizes the current security posture of the Internet-facing WebSocket service in this repository, the hardening that has been implemented, and the main residual risks that remain.
+This document summarizes the current security posture of the Internet-facing surfaces in this repository, the hardening already implemented, and the main residual risks that remain.
+
+It is a companion to [`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`API.md`](./API.md), and should reflect the current code layout under `src/ws_api/`, `src/main.rs`, `src/indexer.rs`, `src/event_hydration.rs`, `src/runtime_state.rs`, `src/protocol.rs`, and `src/metrics.rs`.
 
 ## Scope
 
 Reviewed components:
 
-- `src/websockets.rs`
 - `src/main.rs`
+- `src/ws_api/listener.rs`
+- `src/ws_api/session.rs`
+- `src/ws_api/requests.rs`
+- `src/ws_api/validation.rs`
 - `src/indexer.rs`
-- `src/shared.rs`
+- `src/event_hydration.rs`
+- `src/runtime_state.rs`
+- `src/protocol.rs`
+- `src/metrics.rs`
 - dependency surface via `cargo audit`
 
 Primary attack surface:
 
 - public WebSocket listener on `0.0.0.0:<port>`
-- JSON request parsing for `acuity_indexStatus`, `acuity_getEventMetadata`, `acuity_getEvents`, `acuity_subscribeStatus`, `acuity_subscribeEvents`, `acuity_unsubscribeStatus`, and `acuity_unsubscribeEvents`
-- subscription dispatch path between connection handlers and the indexer
+- JSON-RPC request parsing for:
+  - `acuity_indexStatus`
+  - `acuity_getEventMetadata`
+  - `acuity_getEvents`
+  - `acuity_subscribeStatus`
+  - `acuity_unsubscribeStatus`
+  - `acuity_subscribeEvents`
+  - `acuity_unsubscribeEvents`
+- subscription dispatch path between connection handlers and the indexer/runtime subscription registry
+- optional OpenMetrics HTTP listener on `0.0.0.0:<metrics_port>`
+- upstream node RPC trust boundary used for event hydration and proof retrieval
 
 ## Current Hardening
 
-The following protections are now implemented in the server:
+The following protections are implemented in the current server.
 
-### Resource exhaustion controls
+### Resource-exhaustion controls
 
 - Bounded subscription control queue
-  - The connection-to-subscription-dispatcher control path uses a bounded Tokio channel.
-  - Saturation no longer causes unbounded memory growth.
+  - The connection-to-dispatcher control path uses a bounded Tokio channel.
+  - Saturation is treated as a disconnect/error path rather than unbounded buffering.
 
-- WebSocket message and frame size limits
-  - `max_message_size = 256 KiB`
-  - `max_frame_size = 64 KiB`
-  - Oversized frames/messages are rejected by tungstenite during WebSocket handling.
+- Bounded per-subscriber notification queues
+  - Each connection gets a bounded notification channel for subscription pushes.
+  - Slow subscribers are removed instead of being buffered indefinitely.
+  - The server sends a best-effort `terminated` notification with reason `backpressure` before removal.
 
-- Bounded custom request key sizes
-  - `CustomKey.name` is limited to `128` bytes.
-  - `CustomValue::String` is limited to `1024` bytes for request handling.
-  - Oversized key inputs are rejected before sled prefix scanning or subscription registration.
+- WebSocket frame and message size limits
+  - max WebSocket message size: `256 KiB`
+  - max WebSocket frame size: `64 KiB`
+  - Oversized payloads are rejected during protocol handling.
+
+- Bounded custom key input sizes
+  - custom key name limit: `128` bytes
+  - custom string value limit: `1024` bytes
+  - composite custom values are limited to:
+    - `64` elements
+    - `8` nesting levels
+    - `16384` encoded bytes
+  - Invalid or oversized key payloads are rejected before subscription registration or index scans.
 
 - Global connection cap
-  - Concurrent WebSocket connections are capped at `1024` using a semaphore.
+  - Concurrent WebSocket connections are capped at `1024` by default.
+  - When the cap is exhausted, new upgrade attempts are rejected with HTTP `503 Service Unavailable`.
 
-- Per-connection subscription cap
-  - A single connection may hold at most `128` subscriptions total.
-  - The cap counts `status` and distinct event-key subscriptions.
-  - Duplicate subscriptions do not consume extra quota.
+- Subscription caps
+  - A single connection may hold at most `128` subscriptions by default.
+  - There is also a global total subscription cap of `65536` by default across all connections.
+  - Duplicate subscription attempts do not create extra server-side registrations.
+
+- Query result cap
+  - `acuity_getEvents` applies a configurable per-request limit clamp.
+  - Default maximum events per query: `1000`.
+  - Client-provided `limit` values are clamped into `1..=max_events_limit`.
 
 - Idle timeout
-  - Idle connections are closed after `300` seconds without inbound traffic or outbound subscription notifications.
+  - Idle connections are closed after `300` seconds by default.
+  - Setting `idle_timeout_secs = 0` disables this timeout.
 
-- Graceful overload rejection
-  - When the connection cap is exhausted, the server rejects new upgrades with HTTP `503 Service Unavailable` instead of silently dropping the TCP connection.
+- Heartbeat pings
+  - The server sends WebSocket ping frames periodically.
+  - The interval is bounded by the idle-timeout configuration (`idle_timeout_secs / 2`, capped at 120 seconds).
+  - Incoming ping/pong traffic counts as connection activity.
 
-### Crash resistance improvements
+### Crash-resistance and recovery improvements
 
-- The remotely reachable subscription control path no longer relies on unbounded buffering.
-- Subscription queue saturation and closure are handled as errors rather than panics.
-- Transient RPC failures (node restarts, network blips) no longer terminate the process. The indexer saves its span state to sled, reconnects with exponential backoff, and keeps existing WebSocket clients connected for sled-backed reads while RPC-backed requests return temporary unavailability.
+- Recoverable upstream RPC failures no longer require a full process crash.
+  - The supervisor loop reconnects with exponential backoff.
+  - The current span is saved before the indexer task returns.
+  - Existing WebSocket clients remain connected while local-only requests continue to work.
+
+- RPC-backed requests degrade to temporary unavailability.
+  - `acuity_getEventMetadata` and `acuity_getEvents` return JSON-RPC `-32001` with `data.reason = "temporarily_unavailable"` while the node RPC is down.
+  - `acuity_indexStatus` remains available from local sled state.
+
+- Malformed persisted records are handled defensively.
+  - Malformed span values/keys are skipped with logging during reads.
+  - Malformed persisted event index records are skipped with logging rather than crashing the process.
+
+- Poisoned subscription/runtime locks are recovered.
+  - Shared runtime mutexes use a recovery path that logs and continues rather than panicking immediately.
+
+- Startup and reconnect behavior are explicit.
+  - Genesis-hash mismatch remains a fail-fast startup/runtime error to prevent cross-chain data mixing.
+  - State-pruning misconfiguration remains a fatal operator error.
+
+### Exposure segmentation
+
+- Metrics are served on a separate HTTP listener and port.
+  - This keeps the observability surface distinct from the public WebSocket API.
+  - It does not make the metrics endpoint safe for public exposure by itself.
 
 ## Residual Risks
 
@@ -64,117 +121,159 @@ The most important remaining security concerns are below.
 
 ### 1. No authentication or authorization
 
-The service is intentionally Internet-accessible and currently does not authenticate clients.
+The service is intentionally network-accessible and does not authenticate clients.
 
 Impact:
 
 - Any reachable client can query indexed data.
 - Any reachable client can subscribe to live updates.
-- If event storage is enabled, any reachable client can retrieve decoded events through `acuity_getEvents`.
-- If the service is running in finalized mode, any reachable client can also retrieve finalized block headers plus `System.Events` storage proofs for the matching blocks.
+- Any reachable client can call metadata and event-hydration paths when RPC is available.
+- In finalized mode, any reachable client can request finalized event proofs through `acuity_getEvents`.
 
 Assessment:
 
-- This is the largest remaining exposure.
-- It may be acceptable for a fully public data service, but it should be considered a deliberate product decision rather than an implicit default.
+- This is still the largest deliberate exposure.
+- It may be acceptable for a fully public data service, but it should be treated as a product decision, not an implicit safe default.
 
-### 2. No transport-layer security in-process
+### 2. No in-process TLS
 
-The service speaks plain WebSocket (`ws`), not `wss`.
+The service speaks plain WebSocket (`ws`) and plain HTTP for metrics.
 
 Impact:
 
-- Traffic confidentiality and integrity depend on deployment infrastructure.
-- Direct exposure without a TLS terminator would allow traffic observation and tampering in transit.
+- Confidentiality and integrity depend on external deployment infrastructure.
+- Direct exposure without TLS termination allows traffic observation and tampering in transit.
+- The metrics endpoint has the same issue when exposed directly.
 
 Assessment:
 
-- Safe deployment requires a reverse proxy, load balancer, tunnel, or edge service that terminates TLS.
+- Safe deployment requires TLS termination and normal edge protections outside the process.
 
-### 3. Expensive public endpoints remain available
+### 3. Public expensive endpoints remain available
 
-`acuity_getEventMetadata`, `acuity_getEvents`, and live subscriptions are still public and can be used repeatedly.
+`acuity_getEventMetadata`, `acuity_getEvents`, event hydration, proof retrieval, and live subscriptions are still publicly callable.
 
 Impact:
 
-- Attackers can still consume CPU, I/O, and database scan capacity within the configured limits.
-- The current controls reduce blast radius, but they do not provide rate limiting or fairness across clients/IPs.
+- Attackers can still consume CPU, RPC bandwidth, storage I/O, and upstream node capacity within the configured limits.
+- Hydrated event reads are not purely local; they depend on live node access.
+- Finalized proof inclusion adds extra upstream work.
+- Current caps reduce per-connection blast radius but do not provide fairness across many clients or many source IPs.
 
 Assessment:
 
-- The server is substantially more resilient than before, but it is still vulnerable to sustained abuse from many clients or many source IPs.
+- The server is substantially more resilient than an unbounded implementation.
+- It is still vulnerable to sustained abuse, especially distributed abuse, because there is no built-in rate limiting or admission control by identity/network.
 
-### 4. Some operational metadata is still exposed
+### 4. Metrics endpoint can leak operational metadata
 
-If enabled, the separate OpenMetrics endpoint exposes operational signals such as connection state,
-subscription counts, span progress, and database size.
+If enabled, the separate OpenMetrics endpoint exposes operational state such as:
+
+- RPC connectivity
+- reconnect counts
+- current indexed span
+- latest seen head
+- WebSocket connection count
+- status and event subscription counts
+- database size
+- block fetch/process/commit timing histograms
 
 Impact:
 
-- The metrics listener widens the set of operational metadata visible to anything
-  that can reach that port.
+- Anything that can reach the metrics port can observe internal health and capacity signals.
+- These signals may help attackers tune abuse or infer operational state.
 
 Assessment:
 
-- Lower severity than unauthenticated data access, but worth reviewing if the service is public.
-- The dedicated metrics port should be treated as an internal observability surface,
-  not as part of the public WebSocket API.
+- Lower severity than unauthenticated data access, but still an important exposure.
+- The metrics port should be treated as an internal observability interface, not part of the public API.
 
-### 5. Internal panic paths remain mostly limited to test-only code and explicit fatal startup assertions
+### 5. Dependency maintenance risk remains material
 
-The production runtime no longer relies on `unwrap()` for persisted data decoding, subscription lock handling, or normal startup error flow. Remaining `unwrap()` usage is primarily in Rust test code, with a small number of explicit fail-fast assertions still used for conditions like process startup that cannot be recovered meaningfully in place.
+The project still depends on some crates with maintenance or ecosystem advisories.
 
 Impact:
 
-- This is lower risk for direct Internet-triggered exploitation than the public WebSocket request path.
-- Corrupt persisted span/index records are now skipped with logging instead of taking down the process.
-- Residual fail-fast behavior is concentrated in startup-only paths and test helpers rather than steady-state request handling.
+- Even without a confirmed application-level exploit, these dependencies increase long-term supply-chain and maintenance risk.
+- Some affected crates are in production dependency paths; others land through dev/test or optional light-client-related paths.
 
 Assessment:
 
-- This is now primarily a reliability and operability concern, not the top Internet-facing security issue.
+- This is primarily a patch-management and dependency-upgrade concern.
+- The `sled` dependency remains a notable long-term risk because multiple advisories continue to land through it.
+
+### 6. Some fail-fast paths remain intentional
+
+The production runtime has moved many remotely reachable failure paths away from `unwrap()`-style crashes, but some startup-only or invariant-enforcement failures still intentionally stop the process.
+
+Impact:
+
+- Misconfiguration such as wrong genesis hash or pruned historical state still results in process exit.
+- This is mainly an operability/reliability concern rather than a direct remote-exploitation path.
+
+Assessment:
+
+- Reasonable for invariant protection.
+- Operators should still treat startup config validation and deployment checks as part of the security boundary.
 
 ## Cargo Audit
 
-`cargo audit` reported the following advisories during review:
+`cargo audit -q` reported the following advisories during review:
 
-1. `RUSTSEC-2025-0057`
+1. `RUSTSEC-2024-0388`
+   - dependency chain includes `derivative 2.2.0`
+   - status: unmaintained
+
+2. `RUSTSEC-2025-0057`
    - dependency chain: `sled -> fxhash 0.2.1`
    - status: unmaintained
 
-2. `RUSTSEC-2024-0384`
+3. `RUSTSEC-2024-0384`
    - dependency chain: `sled -> parking_lot 0.11.2 -> instant 0.1.13`
    - status: unmaintained
 
-3. `RUSTSEC-2026-0002`
-   - dependency chain: `subxt-lightclient -> smoldot-light -> lru 0.12.5`
-   - status: unsoundness in `IterMut`
+4. `RUSTSEC-2025-0161`
+   - dependency chain includes `libsecp256k1 0.7.2`
+   - status: unmaintained
+
+5. `RUSTSEC-2024-0436`
+   - dependency chain includes `paste 1.0.15`
+   - status: unmaintained
 
 Assessment:
 
-- The `sled` advisories indicate maintenance risk in the storage stack.
-- The `lru` advisory currently lands through the synthetic proof-verification test tooling rather than the main production request path, but it should still be tracked.
-- These are dependency risks, not evidence of a directly exploitable application bug in this review.
+- The `sled` advisories continue to indicate maintenance risk in the storage stack.
+- Additional advisories now also land through Substrate / cryptography dependency chains.
+- These findings do not by themselves prove a directly exploitable application bug in the WebSocket service, but they should be tracked and revisited during dependency updates.
 
 ## Recommended Next Steps
 
 Highest-value remaining work:
 
-1. Add rate limiting.
-2. Decide whether decoded event retrieval should remain public.
-4. Require TLS termination in all documented deployment paths.
-5. Revisit authentication if the service needs differentiated access or abuse accountability.
-6. Track or remediate the `cargo audit` findings, especially the transitive `lru` advisory and long-term `sled` maintenance risk.
+1. Add network-aware rate limiting at the reverse proxy or edge, and consider in-process quotas if public abuse is expected.
+2. Decide whether all hydrated event retrieval and finalized proof retrieval should remain public.
+3. Require TLS termination in all documented deployment paths.
+4. Keep the metrics endpoint internal-only by default in deployment examples.
+5. Revisit authentication or signed access if differentiated access, abuse attribution, or private deployments matter.
+6. Track or remediate `cargo audit` findings, especially long-term `sled` replacement/containment work and transitive cryptography dependency maintenance risk.
+7. Continue expanding end-to-end tests around overload and backpressure behavior.
 
 ## Deployment Guidance
 
 For Internet exposure, deploy behind infrastructure that provides at least:
 
 - TLS termination
-- request logging
-- connection/IP rate limiting
+- request and connection logging
+- per-IP and/or per-network rate limiting
 - firewalling or edge filtering
-- health checks and overload monitoring
-- internal-only exposure or equivalent protection for the metrics port when enabled
+- overload monitoring and alerting
+- health checks
+- internal-only exposure, authentication, or equivalent filtering for the metrics port when enabled
 
-Without those controls, the service is still materially more exposed to abuse even after the application-level hardening implemented here.
+Also assume the upstream Substrate node is part of the security envelope:
+
+- keep RPC access restricted where possible
+- run archival pruning settings required by the application
+- monitor RPC availability separately from the public WebSocket service
+
+Without those controls, the service remains materially more exposed to abuse even with the application-level hardening now present.
