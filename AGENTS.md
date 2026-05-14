@@ -1,8 +1,20 @@
 # AGENTS
 
+## Primary docs
+
 - [Architecture](./ARCHITECTURE.md)
-- [API](./API.md)
-- [Security](./SECURITY.md)
+- [Book docs](./book/src/SUMMARY.md)
+- [WebSocket API](./book/src/api.md)
+- [Configuration](./book/src/configuration.md)
+- [Security](./book/src/security.md)
+- [Operations](./book/src/operations.md)
+- [Synthetic devnet](./book/src/synthetic-devnet.md)
+
+## Guidance for changes
+
+- Treat `ARCHITECTURE.md` as the source of truth for high-level invariants, data flow, and ownership boundaries.
+- Prefer updating the relevant book page or code comments instead of re-stating architecture here.
+- Keep this file focused on navigation and repo-specific test policy.
 
 ## Test policy
 
