@@ -98,6 +98,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_benchmark_once(
     node_url: &str,
     manifest: &SeedManifest,

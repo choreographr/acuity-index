@@ -1,4 +1,5 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod shared_tests {
     use crate::errors::IndexError;
     use crate::protocol::*;

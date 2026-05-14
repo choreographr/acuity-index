@@ -133,14 +133,14 @@ fn event_collection_element_type_id(
     field: &Field<PortableForm>,
     types: &PortableRegistry,
 ) -> Option<u32> {
-    if let Some(type_name) = field.type_name.as_deref() {
-        if type_name.contains("BoundedVec<") || type_name.starts_with("Vec<") {
-            let ty = types.resolve(field.ty.id)?;
-            if let TypeDef::Composite(composite) = &ty.type_def {
-                for inner in &composite.fields {
-                    if let Some(element_id) = collection_element_type_id(inner.ty.id, types) {
-                        return Some(element_id);
-                    }
+    if let Some(type_name) = field.type_name.as_deref()
+        && (type_name.contains("BoundedVec<") || type_name.starts_with("Vec<"))
+    {
+        let ty = types.resolve(field.ty.id)?;
+        if let TypeDef::Composite(composite) = &ty.type_def {
+            for inner in &composite.fields {
+                if let Some(element_id) = collection_element_type_id(inner.ty.id, types) {
+                    return Some(element_id);
                 }
             }
         }
@@ -451,7 +451,7 @@ pub(crate) fn render_index_spec_toml(spec: &IndexSpec) -> Result<String, IndexEr
     out.push_str("[keys]\n");
     if !spec.keys.is_empty() {
         let mut keys: Vec<_> = spec.keys.iter().collect();
-        keys.sort_by(|(left, _), (right, _)| left.cmp(right));
+        keys.sort_by_key(|(left, _)| *left);
         for (name, kind) in keys {
             out.push_str(name);
             out.push_str(" = ");

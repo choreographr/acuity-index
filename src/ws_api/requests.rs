@@ -72,6 +72,7 @@ pub(crate) async fn build_get_event_metadata_result(
     Ok(GetEventMetadataResult { pallets })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn build_get_events_result(
     runtime: &RuntimeState,
     trees: &Trees,
@@ -185,7 +186,7 @@ pub(crate) fn process_local_method(
             }
             Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
         }
-        "acuity_getEventMetadata" => return None,
+        "acuity_getEventMetadata" => None,
         "acuity_getEvents" => {
             let params: GetEventsParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
@@ -194,7 +195,7 @@ pub(crate) fn process_local_method(
             if let Err(err) = validate_key(&params.key) {
                 return Some(Ok(jsonrpc_invalid_params(id, err, REASON_INVALID_KEY)));
             }
-            return None;
+            None
         }
         "acuity_subscribeEvents" => {
             let params: SubscribeEventsParams = match serde_json::from_value(params.clone()) {
@@ -234,7 +235,7 @@ pub(crate) fn process_local_method(
             }
             Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
         }
-        _ => return None,
+        _ => None,
     }
 }
 
@@ -262,11 +263,9 @@ async fn process_subscription_method(
             match response_rx.await {
                 Ok(Ok(())) => Some(Ok(jsonrpc_success(id, serde_json::json!(subscription_id)))),
                 Ok(Err(message)) => Some(Ok(jsonrpc_subscription_limit(id, message))),
-                Err(_) => {
-                    return Some(Err(disconnect_error(
-                        "subscription dispatcher dropped response",
-                    )));
-                }
+                Err(_) => Some(Err(disconnect_error(
+                    "subscription dispatcher dropped response",
+                ))),
             }
         }
         "acuity_unsubscribeStatus" => {
@@ -285,11 +284,12 @@ async fn process_subscription_method(
                 return Some(Err(err));
             }
             if response_rx.await.is_err() {
-                return Some(Err(disconnect_error(
+                Some(Err(disconnect_error(
                     "subscription dispatcher dropped response",
-                )));
+                )))
+            } else {
+                Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
             }
-            Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
         }
         "acuity_subscribeEvents" => {
             let params: SubscribeEventsParams = match serde_json::from_value(params.clone()) {
@@ -316,11 +316,9 @@ async fn process_subscription_method(
             match response_rx.await {
                 Ok(Ok(())) => Some(Ok(jsonrpc_success(id, serde_json::json!(subscription_id)))),
                 Ok(Err(message)) => Some(Ok(jsonrpc_subscription_limit(id, message))),
-                Err(_) => {
-                    return Some(Err(disconnect_error(
-                        "subscription dispatcher dropped response",
-                    )));
-                }
+                Err(_) => Some(Err(disconnect_error(
+                    "subscription dispatcher dropped response",
+                ))),
             }
         }
         "acuity_unsubscribeEvents" => {
@@ -339,11 +337,12 @@ async fn process_subscription_method(
                 return Some(Err(err));
             }
             if response_rx.await.is_err() {
-                return Some(Err(disconnect_error(
+                Some(Err(disconnect_error(
                     "subscription dispatcher dropped response",
-                )));
+                )))
+            } else {
+                Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
             }
-            Some(Ok(jsonrpc_success(id, serde_json::json!(true))))
         }
         _ => None,
     }

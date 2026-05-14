@@ -85,10 +85,10 @@ impl BlockProcessingContext {
         event_name: &str,
         fields: &Composite<()>,
     ) -> Vec<Key> {
-        if let Some(event_map) = self.event_index.get(pallet_name) {
-            if let Some(params) = event_map.get(event_name) {
-                return self.keys_from_params(params, fields);
-            }
+        if let Some(event_map) = self.event_index.get(pallet_name)
+            && let Some(params) = event_map.get(event_name)
+        {
+            return self.keys_from_params(params, fields);
         }
         vec![]
     }
@@ -936,11 +936,11 @@ pub fn load_spans(span_db: &Tree, spec_change_blocks: &[u32]) -> Result<Vec<Span
             }
         }
         let span = Span { start, end };
-        if let Some(previous) = spans.last_mut() {
-            if span.start <= previous.end.saturating_add(1) {
-                previous.end = previous.end.max(span.end);
-                continue;
-            }
+        if let Some(previous) = spans.last_mut()
+            && span.start <= previous.end.saturating_add(1)
+        {
+            previous.end = previous.end.max(span.end);
+            continue;
         }
         spans.push(span);
     }
@@ -1170,6 +1170,7 @@ fn process_queued_head_result(
 
 // ─── Main indexer loop ────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run_indexer(
     trees: Trees,
     api: OnlineClient<PolkadotConfig>,
@@ -1574,11 +1575,7 @@ events = [
 
     #[tokio::test]
     async fn guarded_empty_backfill_queue_skips_select_all() {
-        let mut futures: Vec<
-            std::pin::Pin<
-                Box<dyn std::future::Future<Output = Result<(u32, u32, u32), IndexError>> + Send>,
-            >,
-        > = Vec::new();
+        let mut futures: Vec<BlockIndexFuture<'static>> = Vec::new();
 
         let branch_selected = tokio::select! {
             (..)= async {

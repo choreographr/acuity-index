@@ -42,11 +42,11 @@ fn response_events(response: &Value) -> Result<Vec<(u64, u64)>, Box<dyn Error>> 
         .collect()
 }
 
-fn response_decoded_event<'a>(
-    response: &'a Value,
+fn response_decoded_event(
+    response: &Value,
     block_number: u64,
     event_index: u64,
-) -> Result<&'a Value, Box<dyn Error>> {
+) -> Result<&Value, Box<dyn Error>> {
     response["result"]["events"]
         .as_array()
         .ok_or_else(|| io::Error::other(format!("missing events array in response: {response}")))?
@@ -63,7 +63,7 @@ fn response_decoded_event<'a>(
         })
 }
 
-fn response_block_proof<'a>(response: &'a Value, block_number: u64) -> Result<&'a Value, Box<dyn Error>> {
+fn response_block_proof(response: &Value, block_number: u64) -> Result<&Value, Box<dyn Error>> {
     response["result"]["proofs"]["items"]
         .as_array()
         .ok_or_else(|| io::Error::other(format!("missing proofs items array in response: {response}")))?

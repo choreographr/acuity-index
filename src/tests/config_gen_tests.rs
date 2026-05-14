@@ -1,4 +1,5 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod config_gen_tests {
     use crate::{
         config::{EventConfig, IndexSpec, PalletConfig, ParamConfig, ScalarKind},

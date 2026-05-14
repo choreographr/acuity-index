@@ -80,7 +80,7 @@ pub(crate) fn spawn_subscription_dispatcher(
     tokio::spawn(async move {
         let live_ws_config_rx = live_ws_config_rx;
         while let Some(msg) = sub_rx.recv().await {
-            let _ = process_sub_msg(runtime.as_ref(), &*live_ws_config_rx.borrow(), msg);
+            let _ = process_sub_msg(runtime.as_ref(), &live_ws_config_rx.borrow(), msg);
         }
     })
 }

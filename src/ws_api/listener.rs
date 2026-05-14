@@ -31,6 +31,7 @@ pub(crate) fn service_unavailable_response(message: &str) -> HttpResponse<Option
     response
 }
 
+#[allow(clippy::result_large_err)]
 async fn reject_connection_limit_exceeded(raw_stream: TcpStream) {
     let callback = |_req: &Request, _response: Response| {
         Err(service_unavailable_response(

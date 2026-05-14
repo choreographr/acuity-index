@@ -1,4 +1,5 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod indexer_tests {
     use crate::config::IndexSpec;
     use crate::indexer::*;

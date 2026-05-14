@@ -30,7 +30,7 @@ fn heartbeat_interval_for(idle_timeout_secs: u64) -> Duration {
     match idle_timeout_secs {
         0 => Duration::from_secs(DEFAULT_HEARTBEAT_INTERVAL_SECS),
         1 => Duration::from_secs(1),
-        secs => Duration::from_secs((secs / 2).max(1).min(DEFAULT_HEARTBEAT_INTERVAL_SECS)),
+        secs => Duration::from_secs((secs / 2).clamp(1, DEFAULT_HEARTBEAT_INTERVAL_SECS)),
     }
 }
 
@@ -81,6 +81,7 @@ impl Drop for ConnectionMetricGuard {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn handle_connection_inner(
     runtime: Arc<RuntimeState>,
     raw_stream: TcpStream,
@@ -241,6 +242,7 @@ async fn handle_connection_inner(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn handle_connection(
     runtime: Arc<RuntimeState>,
     raw_stream: TcpStream,

@@ -5,7 +5,7 @@ pub enum IndexError {
     #[error("database error")]
     Sled(#[from] sled::Error),
     #[error("connection error")]
-    Subxt(#[from] subxt::Error),
+    Subxt(Box<subxt::Error>),
     #[error("websocket error")]
     Tungstenite(#[from] tungstenite::Error),
     #[error("parse error")]
@@ -23,13 +23,13 @@ pub enum IndexError {
     #[error("metadata error")]
     MetadataError(#[from] subxt::error::MetadataTryFromError),
     #[error("block stream error")]
-    BlocksError(#[from] subxt::error::BlocksError),
+    BlocksError(Box<subxt::error::BlocksError>),
     #[error("block stream closed")]
     BlockStreamClosed,
     #[error("events error")]
-    EventsError(#[from] subxt::error::EventsError),
+    EventsError(Box<subxt::error::EventsError>),
     #[error("at-block error")]
-    OnlineClientAtBlockError(#[from] subxt::error::OnlineClientAtBlockError),
+    OnlineClientAtBlockError(Box<subxt::error::OnlineClientAtBlockError>),
     #[error("online client error")]
     OnlineClientError(#[from] subxt::error::OnlineClientError),
     #[error("JSON error")]
@@ -40,6 +40,30 @@ pub enum IndexError {
     TomlSer(#[from] toml::ser::Error),
     #[error("internal error: {0}")]
     Internal(String),
+}
+
+impl From<subxt::Error> for IndexError {
+    fn from(value: subxt::Error) -> Self {
+        Self::Subxt(Box::new(value))
+    }
+}
+
+impl From<subxt::error::BlocksError> for IndexError {
+    fn from(value: subxt::error::BlocksError) -> Self {
+        Self::BlocksError(Box::new(value))
+    }
+}
+
+impl From<subxt::error::EventsError> for IndexError {
+    fn from(value: subxt::error::EventsError) -> Self {
+        Self::EventsError(Box::new(value))
+    }
+}
+
+impl From<subxt::error::OnlineClientAtBlockError> for IndexError {
+    fn from(value: subxt::error::OnlineClientAtBlockError) -> Self {
+        Self::OnlineClientAtBlockError(Box::new(value))
+    }
 }
 
 pub fn internal_error(message: impl Into<String>) -> IndexError {

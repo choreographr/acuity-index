@@ -285,7 +285,7 @@ fn resolve_args(
 
     let db_mode = if let Some(ref m) = cli.db_mode {
         m.clone()
-    } else if let Some(ref s) = opts.and_then(|o| o.db_mode.as_ref()) {
+    } else if let Some(s) = opts.and_then(|o| o.db_mode.as_ref()) {
         parse_db_mode(s)?
     } else {
         DEFAULT_DB_MODE.clone()
@@ -560,6 +560,7 @@ fn event_targets_path(event: &Event, target_path: &Path) -> bool {
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_runtime_config_change(
     index_spec_path: &Path,
     options_config_path: Option<&Path>,
@@ -635,6 +636,7 @@ fn process_runtime_config_change(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn watch_runtime_config(
     index_spec_path: PathBuf,
     initial_spec_snapshot: ConfigSnapshot,
@@ -994,7 +996,7 @@ async fn run() -> Result<(), IndexError> {
         while let Some(msg) = sub_rx.recv().await {
             if let Err(err) = process_sub_msg(
                 subscriptions_runtime.as_ref(),
-                &*subscriptions_ws_config.borrow(),
+                &subscriptions_ws_config.borrow(),
                 msg,
             ) {
                 error!("Subscription rejected: {err}");
