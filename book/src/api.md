@@ -1,216 +1,736 @@
 # WebSocket API
 
-The public API is a JSON-over-WebSocket protocol exposed on `ws://localhost:8172`
-by default.
+Connect to `ws://localhost:8172` by default.
 
-There are two message classes:
+For Internet-facing deployment guidance and the current security review, see
+[Security And Deployment](./security.md).
 
-- request/response messages, which always carry an `id`
-- notifications, which never carry an `id`
+The public API is a JSON-RPC 2.0-over-WebSocket protocol with two message classes:
 
-For Internet-facing deployment guidance, read [Security And Deployment](./security.md).
+- request/response messages, which carry a numeric or string `id`
+- server notifications, which never carry an `id`
 
-## Requests
+## Protocol Overview
 
-Every request includes:
+### Requests
 
-- `id`: client-selected unsigned integer
-- `type`: request discriminator
+Every client request must conform to the JSON-RPC 2.0 specification:
+
+- `jsonrpc`: must be `"2.0"`
+- `id`: unsigned integer or string chosen by the client
+- `method`: the RPC method name
+- `params`: optional method parameters
 
 Example:
 
 ```json
-{"id":1,"type":"Status"}
+{"jsonrpc":"2.0","id":1,"method":"acuity_indexStatus","params":{}}
 ```
 
-## Main Request Types
+### Responses
 
-- `Status`: returns indexed block spans
-- `Variants`: returns pallet and event variant metadata
-- `GetEvents`: queries indexed events for a key, optionally paginated with `before`
-  and optionally enriched with finalized proofs via `includeProofs`
-- `SubscribeStatus`: subscribes to status changes
-- `SubscribeEvents`: subscribes to updates for one key
-- `UnsubscribeStatus`: removes a status subscription
-- `UnsubscribeEvents`: removes an event subscription
-- `SizeOnDisk`: returns current database size
+Every successful request receives a JSON-RPC 2.0 response with the same `id`.
 
-## `Status`
+- `jsonrpc`: `"2.0"`
+- `id`: matches the request `id`
+- `result`: the method return value
 
-Request:
-
-```json
-{"id":1,"type":"Status"}
-```
-
-Example response:
+Example:
 
 ```json
 {
+  "jsonrpc": "2.0",
   "id": 1,
-  "type": "status",
-  "data": [
-    {"start": 1, "end": 1000}
-  ]
+  "result": {
+    "spans": [
+      {"start": 1, "end": 1000}
+    ]
+  }
 }
 ```
 
-## `Variants`
+### Error Responses
+
+Failed requests receive a JSON-RPC 2.0 error response with the same `id`.
+
+- `jsonrpc`: `"2.0"`
+- `id`: matches the request `id` (or `null` if the `id` could not be parsed)
+- `error`: error object with:
+  - `code`: integer error code
+  - `message`: human-readable description
+  - `data`: optional additional information
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32602,
+    "message": "Invalid params",
+    "data": {
+      "reason": "invalid_key"
+    }
+  }
+}
+```
+
+### Notifications
+
+Notifications are pushed by the server for active subscriptions. They use a consistent envelope:
+
+- `jsonrpc`: `"2.0"`
+- `method`: `"acuity_subscription"`
+- `params`:
+  - `subscription`: the subscription ID string
+  - `result`: the notification payload, which always includes a `type` field
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_123",
+    "result": {
+      "type": "event",
+      "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+      "event": {
+        "blockNumber": 50,
+        "eventIndex": 3,
+        "timestamp": 1717171717000,
+        "event": {
+          "specVersion": 1234,
+          "palletName": "Referenda",
+          "eventName": "Submitted",
+          "palletIndex": 42,
+          "variantIndex": 0,
+          "eventIndex": 3,
+          "fields": {"index": 42}
+        }
+      }
+    }
+  }
+}
+```
+
+## Methods
+
+### `acuity_indexStatus`
 
 Request:
 
 ```json
-{"id":2,"type":"Variants"}
+{"jsonrpc":"2.0","id":1,"method":"acuity_indexStatus","params":{}}
 ```
 
-Example response:
+Response payload:
+
+- `spans`: array of indexed block spans
+- each span has:
+  - `start`: first indexed block
+  - `end`: last indexed block
+
+Example:
 
 ```json
 {
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "spans": [
+      {"start": 1, "end": 1000}
+    ]
+  }
+}
+```
+
+### `acuity_getEventMetadata`
+
+Request:
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"acuity_getEventMetadata","params":{}}
+```
+
+Response payload:
+
+- `pallets`: array of pallets
+- each pallet has:
+  - `index`: pallet event index
+  - `name`: pallet name
+  - `events`: array of event variants
+- each event variant has:
+  - `index`: variant index
+  - `name`: variant name
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
   "id": 2,
-  "type": "variants",
-  "data": [
-    {
-      "index": 42,
-      "name": "Referenda",
-      "events": [
-        {"index": 0, "name": "Submitted"}
-      ]
-    }
-  ]
+  "result": {
+    "pallets": [
+      {
+        "index": 42,
+        "name": "Referenda",
+        "events": [
+          {"index": 0, "name": "Submitted"}
+        ]
+      }
+    ]
+  }
 }
 ```
 
-## `GetEvents`
+### `acuity_getEvents`
 
-Example request:
-
-```json
-{
-  "id": 3,
-  "type": "GetEvents",
-  "key": {
-    "type": "Custom",
-    "value": {"name": "ref_index", "kind": "u32", "value": 42}
-  },
-  "limit": 100,
-  "before": null,
-  "includeProofs": false
-}
-```
-
-Request fields:
+Request parameters:
 
 - `key`: query key
 - `limit`: optional `u16`, default `100`
 - `before`: optional event cursor
-- `includeProofs`: optional boolean, default `false`
 
-Response payload includes:
-
-- `key`: the queried key
-- `events`: matching event refs, newest first
-- `decodedEvents`: decoded payloads when available
-- `proofsByBlock`: omitted unless proofs were requested; `null` if requested but unavailable
-- `proofsStatus`: omitted unless proofs were requested
-
-When proofs are available, each proof object includes:
-
-- `blockNumber`
-- `blockHash`
-- `header`
-- `storageKey`
-- `storageValue`
-- `storageProof`
-
-If proofs are requested while the indexer is not running in finalized mode,
-`proofsByBlock` is `null` and `proofsStatus.reason` is
-`finalized_proofs_unavailable`.
-
-## Composite Custom Keys
-
-Composite keys use an ordered array of typed values:
+Request:
 
 ```json
 {
+  "jsonrpc": "2.0",
   "id": 3,
-  "type": "GetEvents",
-  "key": {
-    "type": "Custom",
-    "value": {
-      "name": "item_revision",
-      "kind": "composite",
-      "value": [
-        {"kind": "bytes32", "value": "0xabc123..."},
-        {"kind": "u32", "value": 7}
+  "method": "acuity_getEvents",
+  "params": {
+    "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+    "limit": 100,
+    "before": null
+  }
+}
+```
+
+Composite custom keys use an ordered array of typed values:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "acuity_getEvents",
+  "params": {
+    "key": {
+      "type": "Custom",
+      "value": {
+        "name": "item_revision",
+        "kind": "composite",
+        "value": [
+          {"kind": "bytes32", "value": "0xabc123..."},
+          {"kind": "u32", "value": 7}
+        ]
+      }
+    }
+  }
+}
+```
+
+Response payload:
+
+- `key`: the queried key
+- `events`: matching hydrated events, newest first
+- `proofs`: proof availability and items
+- `page`: pagination cursor information
+
+`proofs` object:
+
+- `available`: boolean indicating whether proofs are included
+- `reason`: stable machine-readable reason such as `included`, `rpc_proof_unavailable`, or `finalized_proofs_unavailable`
+- `message`: human-readable explanation
+- `items`: array of proof objects (present when `available` is `true`)
+
+Each proof item contains:
+
+- `blockNumber`: `u32`
+- `blockHash`: hex-encoded block hash
+- `header`: serialized block header JSON
+- `storageKey`: hex-encoded `System.Events` storage key
+- `storageValue`: hex-encoded SCALE-encoded `System.Events` bytes for that block
+- `storageProof`: array of hex-encoded trie proof nodes
+
+`page` object:
+
+- `nextCursor`: cursor for the next page, or `null` if no more results
+- `hasMore`: boolean indicating additional pages exist
+
+Each event in `events` contains:
+
+- `blockNumber`: `u32`
+- `eventIndex`: zero-based `u32` ordinal within the block
+- `timestamp`: block timestamp in milliseconds since Unix epoch, from `Timestamp::Now` when available; `0` for blocks where that storage value is unavailable
+- `event`: decoded event JSON
+
+Decoded event JSON currently contains:
+
+- `specVersion`
+- `palletName`
+- `eventName`
+- `palletIndex`
+- `variantIndex`
+- `eventIndex`: zero-based `u32` ordinal within the block
+- `fields`
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+    "events": [
+      {
+        "blockNumber": 50,
+        "eventIndex": 3,
+        "timestamp": 1717171717000,
+        "event": {
+          "specVersion": 1234,
+          "palletName": "Referenda",
+          "eventName": "Submitted",
+          "palletIndex": 42,
+          "variantIndex": 0,
+          "eventIndex": 3,
+          "fields": {
+            "index": 42
+          }
+        }
+      }
+    ],
+    "proofs": {
+      "available": true,
+      "reason": "included",
+      "message": "Finalized event proofs included.",
+      "items": [
+        {
+          "blockNumber": 50,
+          "blockHash": "0xabc123...",
+          "header": {
+            "parent_hash": "0x...",
+            "number": 50,
+            "state_root": "0x...",
+            "extrinsics_root": "0x...",
+            "digest": {"logs": []}
+          },
+          "storageKey": "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7",
+          "storageValue": "0x...",
+          "storageProof": ["0x..."]
+        }
+      ]
+    },
+    "page": {
+      "nextCursor": {"blockNumber": 49, "eventIndex": 7},
+      "hasMore": true
+    }
+  }
+}
+```
+
+Example when proofs are unavailable (indexer not in finalized mode):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+    "events": [{
+      "blockNumber": 50,
+      "eventIndex": 3,
+      "timestamp": 1717171717000,
+      "event": {
+        "specVersion": 1234,
+        "palletName": "Referenda",
+        "eventName": "Submitted",
+        "palletIndex": 42,
+        "variantIndex": 0,
+        "eventIndex": 3,
+        "fields": {
+          "index": 42
+        }
+      }
+    }],
+    "proofs": {
+      "available": false,
+      "reason": "finalized_proofs_unavailable",
+      "message": "Finalized proofs are only available when the indexer is running with finalized indexing."
+    },
+    "page": {
+      "nextCursor": null,
+      "hasMore": false
+    }
+  }
+}
+```
+
+### `acuity_subscribeStatus`
+
+Request:
+
+```json
+{"jsonrpc":"2.0","id":5,"method":"acuity_subscribeStatus","params":{}}
+```
+
+Response payload: subscription ID string
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": "sub_abc123"
+}
+```
+
+### `acuity_unsubscribeStatus`
+
+Request:
+
+```json
+{"jsonrpc":"2.0","id":6,"method":"acuity_unsubscribeStatus","params":{"subscription":"sub_abc123"}}
+```
+
+Response payload: `true`
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "result": true
+}
+```
+
+### `acuity_subscribeEvents`
+
+Request:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "acuity_subscribeEvents",
+  "params": {
+    "key": {"type": "Custom", "value": {"name": "account_id", "kind": "bytes32", "value": "0xabc..."}}
+  }
+}
+```
+
+Response payload: subscription ID string
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "result": "sub_def456"
+}
+```
+
+### `acuity_unsubscribeEvents`
+
+Request:
+
+```json
+{"jsonrpc":"2.0","id":8,"method":"acuity_unsubscribeEvents","params":{"subscription":"sub_def456"}}
+```
+
+Response payload: `true`
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "result": true
+}
+```
+
+## Notifications
+
+All subscription notifications use the method `acuity_subscription` and include the subscription ID in `params.subscription`. The `params.result` object always contains a `type` field indicating the notification type.
+
+### Status notifications
+
+Sent to status subscribers whenever the persisted indexed span advances.
+
+`params.result.type`: `"status"`
+
+Payload (in `params.result`):
+
+- `spans`: same array returned by `acuity_indexStatus`
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_abc123",
+    "result": {
+      "type": "status",
+      "spans": [
+        {"start": 1, "end": 1001}
       ]
     }
   }
 }
 ```
 
-## `SizeOnDisk`
+### Event notifications
 
-Request:
+Sent to event subscribers whenever a matching event is indexed.
 
-```json
-{"id":4,"type":"SizeOnDisk"}
-```
+`params.result.type`: `"event"`
 
-Example response:
+Payload (in `params.result`):
+
+- `key`: subscribed key that matched
+- `event`: matching hydrated event object
+
+Example:
 
 ```json
 {
-  "id": 4,
-  "type": "sizeOnDisk",
-  "data": 123456
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_def456",
+    "result": {
+      "type": "event",
+      "key": {"type": "Custom", "value": {"name": "item_id", "kind": "bytes32", "value": "0xabc..."}},
+      "event": {
+        "blockNumber": 50,
+        "eventIndex": 3,
+        "timestamp": 1717171717000,
+        "event": {
+          "specVersion": 1234,
+          "palletName": "Referenda",
+          "eventName": "Submitted",
+          "palletIndex": 42,
+          "variantIndex": 0,
+          "eventIndex": 3,
+          "fields": {
+            "index": 42
+          }
+        }
+      }
+    }
+  }
 }
 ```
 
-## Notifications
+### Subscription termination notifications
 
-Representative notification types:
+Sent best-effort before the server drops a subscriber because it cannot keep up.
 
-- `status`
-- `eventNotification`
-- `subscriptionTerminated`
+`params.result.type`: `"terminated"`
 
-`eventNotification` includes the subscribed key, matching event reference, and a
-decoded event object.
+Payload (in `params.result`):
 
-`subscriptionTerminated` is sent best-effort before the server drops a
-subscriber that cannot keep up. The current reason is `backpressure`.
+- `reason`: currently `backpressure`
+- `message`: human-readable explanation
+
+Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_def456",
+    "result": {
+      "type": "terminated",
+      "reason": "backpressure",
+      "message": "subscriber disconnected due to backpressure"
+    }
+  }
+}
+```
+
+This notification is best-effort only. If the subscriber queue is already full, the termination notice may not be delivered before the connection is dropped.
 
 ## Errors
 
-Invalid requests and handler failures are returned as responses with
-`type: "error"` and the original request `id` when available.
+The server uses standard JSON-RPC 2.0 error codes:
 
-Current error codes include:
+| Code | Meaning |
+|------|---------|
+| `-32700` | Parse error - invalid JSON |
+| `-32600` | Invalid request - not a valid JSON-RPC 2.0 object |
+| `-32601` | Method not found |
+| `-32602` | Invalid params |
+| `-32603` | Internal error |
+| `-32001` | Upstream unavailable - node RPC connection is down |
 
-- `invalid_request`
-- `internal_error`
-- `subscription_limit`
-- `temporarily_unavailable`
+Application-specific error reasons are provided in `error.data.reason`:
 
-During node outages, local requests such as `Status` and `SizeOnDisk` continue
-to work. `Variants` and `GetEvents` require live RPC access and return
-`temporarily_unavailable` until the node connection is restored.
+- `subscription_limit`: connection exceeds the per-connection subscription cap or the global total subscription cap
+- `temporarily_unavailable`: an RPC-backed request (`acuity_getEventMetadata` or `acuity_getEvents`) is made while the node connection is down
 
-## Query Limits And Validation
+Example when no request `id` could be recovered:
 
-Current protocol-level validation includes:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": null,
+  "error": {
+    "code": -32700,
+    "message": "Parse error"
+  }
+}
+```
 
-- custom key names limited to `128` bytes
-- custom string values limited to `1024` bytes
-- composite keys with at most `64` elements
-- composite nesting depth limited to `8`
-- encoded custom key payload size limited to `16384` bytes
-- maximum events returned per query limited by server configuration, default `1000`
+Invalid custom key payloads are returned as `-32602` responses, including:
+
+- custom key names longer than `128` bytes
+- custom string values longer than `1024` bytes
+- composite keys with more than `64` elements
+- composite keys nested deeper than `8` composite levels
+- custom values whose encoded key payload exceeds `16384` bytes
+
+Operational failure modes that may also appear as connection drops or protocol-level failures include:
+
+- oversized WebSocket frame or message rejected during protocol handling
+- subscription control queue saturation
+- connection idle timeout
+
+The server sends periodic WebSocket ping frames as a heartbeat. By default this is every 120 seconds, and when an idle timeout is configured the heartbeat interval is reduced to at most half of `idle_timeout_secs`. Incoming ping/pong frames count as connection activity.
+
+During node outages, local requests such as `acuity_indexStatus` continue to
+work. `acuity_getEventMetadata` and `acuity_getEvents` require live RPC access and return
+`-32001` (upstream unavailable) until the node connection is re-established.
 
 ## Pagination Semantics
 
-`GetEvents` returns matches in descending order by `(blockNumber, eventIndex)`.
+`acuity_getEvents` returns matches in descending order by `(blockNumber, eventIndex)`.
 
 - default `limit` is `100`
+- `limit` is clamped to `1..=max_events_limit` (default `1000`, configurable via `--max-events-limit`; invalid zero-valued configs are rejected at startup)
 - `before` is exclusive
+
+Example cursor:
+
+```json
+{"blockNumber": 50, "eventIndex": 3}
+```
+
+This returns only events strictly older than `(50, 3)`.
+
+Use the `page` object in the response for cursor-based pagination:
+
+```json
+{
+  "page": {
+    "nextCursor": {"blockNumber": 49, "eventIndex": 7},
+    "hasMore": true
+  }
+}
+```
+
+Pass `nextCursor` as the `before` parameter to fetch the next page.
+
+## Key Format
+
+Keys are JSON objects with a `type` discriminant.
+
+Supported key shapes:
+
+```json
+{"type":"Variant","value":[0,3]}
+{"type":"Custom","value":{"name":"para_id","kind":"u32","value":1000}}
+{"type":"Custom","value":{"name":"account_id","kind":"bytes32","value":"0x1234..."}}
+{"type":"Custom","value":{"name":"published","kind":"bool","value":true}}
+{"type":"Custom","value":{"name":"revision","kind":"u128","value":"42"}}
+{"type":"Custom","value":{"name":"slug","kind":"string","value":"hello"}}
+{"type":"Custom","value":{"name":"balance","kind":"u64","value":"42"}}
+```
+
+### `Variant`
+
+- array of `[pallet_index, variant_index]`
+
+### `Custom`
+
+Fields:
+
+- `name`: key name
+- `kind`: scalar type
+- `value`: scalar value encoded according to `kind`
+
+Supported scalar kinds:
+
+- `bytes32`: 32-byte hex string, `0x` prefix accepted
+- `u32`: JSON number
+- `u64`: JSON integer or string on input, serialized as string on output
+- `u128`: JSON integer or string on input, serialized as string on output
+- `string`: JSON string
+- `bool`: JSON boolean
+
+Composite keys are encoded recursively and must satisfy these protocol-level limits:
+
+- max composite elements per composite value: `64`
+- max composite nesting depth: `8`
+- max encoded custom value size: `16384` bytes
+
+## Storage Notes
+
+Index entries store event refs locally in sled.
+
+Hydrated event payloads are fetched from the node on demand for:
+
+- `acuity_getEvents` responses
+- event subscription notifications
+
+Hydration also reads `Timestamp::Now` for each returned block so every hydrated event includes a top-level `timestamp` field. For rare blocks where `Timestamp::Now` is unavailable, the API returns `timestamp: 0` instead of failing the request.
+
+The API always returns hydrated events for these surfaces, so live node access is required to serve them.
+
+## Delivery and Backpressure
+
+Subscription delivery uses bounded internal queues.
+
+- slow subscribers are removed instead of being buffered indefinitely
+- the server attempts to send a `terminated` notification before removal
+- if that best-effort notification cannot be queued, the client may observe only the disconnect
+
+## Connection Limits
+
+The server applies these connection-level limits (defaults; all configurable via CLI flags or `--options-config`):
+
+- max concurrent WebSocket connections: `1024` (`--max-connections`)
+- max total subscriptions across all connections: `65536` (`--max-total-subscriptions`)
+- max subscriptions per connection: `128` (`--max-subscriptions-per-connection`)
+- subscription notification buffer size: `256` (`--subscription-buffer-size`)
+- subscription control channel buffer: `1024` (`--subscription-control-buffer-size`)
+- idle timeout: `300s` (`--idle-timeout-secs`, `0` disables the timeout)
+- max events per query: `1000` (`--max-events-limit`)
+
+If the global connection cap is exhausted, new upgrade attempts are rejected with
+HTTP `503 Service Unavailable`.
+
+If the total subscription cap is reached, new subscription requests are rejected
+with a `-32602` error response with `data.reason: "subscription_limit"`. Because the
+subscription was never established, no termination notification is
+sent for that initial rejection.
+
+Protocol-level limits (not configurable at runtime):
+
+- max WebSocket message size: `256 KiB`
+- max WebSocket frame size: `64 KiB`
+- max custom key name length: `128` bytes
+- max custom string key length: `1024` bytes
+- max composite elements per composite value: `64`
+- max composite nesting depth: `8`
+- max encoded custom value size: `16384` bytes
