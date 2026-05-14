@@ -16,6 +16,14 @@ build-release:
 test:
     cargo test
 
+book-build:
+    command -v mdbook >/dev/null
+    mdbook build book
+
+book-serve:
+    command -v mdbook >/dev/null
+    mdbook serve book --open
+
 runtime-build:
     cargo build --release --manifest-path "{{runtime_manifest}}"
 
