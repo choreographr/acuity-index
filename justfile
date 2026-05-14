@@ -16,6 +16,15 @@ build-release:
 test:
     cargo test
 
+release-checks:
+    cargo fmt --check
+    cargo clippy --all-targets --all-features -- -D warnings
+    cargo test
+    just test-integration
+
+release level='patch':
+    cargo release "{{level}}" --execute
+
 book-build:
     command -v mdbook >/dev/null
     mdbook build book

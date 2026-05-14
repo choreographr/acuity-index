@@ -16,4 +16,5 @@
 - [Benchmarking](./benchmarking.md)
 - [Architecture](./architecture.md)
 - [Contributing](./contributing.md)
+- [Releases](./releases.md)
 - [Recipes](./recipes.md)

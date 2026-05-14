@@ -8,6 +8,13 @@ homepage = "https://index.acuity.network/"
 repository = "https://github.com/acuity-network/acuity-index"
 license = "Apache-2.0"
 
+[package.metadata.release]
+allow-branch = ["main"]
+pre-release-commit-message = "chore(release): {{version}}"
+tag-name = "v{{version}}"
+tag-message = "Release {{version}}"
+pre-release-hook = ["bash", "./scripts/release-checks.sh"]
+
 [features]
 default = []
 synthetic-tools = []
@@ -71,3 +78,8 @@ lto = "fat"
 codegen-units = 1
 incremental = false
 strip = "symbols"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
