@@ -1,71 +1,96 @@
 # acuity-index
 
-A configurable, schema-less event indexer for Substrate-based blockchains.
-It connects to a node via WebSocket, decodes on-chain events, stores them in
-an embedded [sled](https://github.com/spacejam/sled) database, and exposes the
-indexed data through a WebSocket API.
+`acuity-index` is a configurable event indexer for Substrate-based blockchains.
+It connects to a node over WebSocket RPC, decodes on-chain events without
+chain-specific generated types, stores indexed references in an embedded
+[`sled`](https://github.com/spacejam/sled) database, and exposes the indexed data
+through its own WebSocket API.
 
-Primary documentation now lives in the in-repo mdBook at
-[`book/`](./book/) and can be built locally with `just book-build` or served with
-`just book-serve`.
-
-Start there for mixed operator, contributor, and internals documentation:
-
-- book entrypoint: [`book/src/index.md`](./book/src/index.md)
-- table of contents: [`book/src/SUMMARY.md`](./book/src/SUMMARY.md)
-
-Detailed source documents remain available too:
-
-- changelog: [`CHANGELOG.md`](./CHANGELOG.md)
-- implementation overview: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
-- WebSocket protocol reference: [`API.md`](./API.md)
-- security review and deployment guidance: [`SECURITY.md`](./SECURITY.md)
+This repository is primarily a Rust CLI application.
 
 ## Documentation
 
-- Read the book for the primary project documentation: operator workflows,
-  contributor workflows, and internal architecture.
-- Use `README.md` as the short project entrypoint.
-- Use `API.md`, `ARCHITECTURE.md`, and `SECURITY.md` as detailed companion
-  references while the book continues to absorb more of their content.
+Primary documentation lives in the in-repo mdBook:
 
-## Features
+- overview: [`book/src/index.md`](./book/src/index.md)
+- installation: [`book/src/installation.md`](./book/src/installation.md)
+- quick start: [`book/src/quickstart.md`](./book/src/quickstart.md)
+- CLI reference: [`book/src/cli.md`](./book/src/cli.md)
+- configuration: [`book/src/configuration.md`](./book/src/configuration.md)
+- WebSocket API: [`book/src/api.md`](./book/src/api.md)
+- operations: [`book/src/operations.md`](./book/src/operations.md)
+- security: [`book/src/security.md`](./book/src/security.md)
+- synthetic devnet: [`book/src/synthetic-devnet.md`](./book/src/synthetic-devnet.md)
+- contributing: [`book/src/contributing.md`](./book/src/contributing.md)
+- full table of contents: [`book/src/SUMMARY.md`](./book/src/SUMMARY.md)
 
-- **Config-driven** — indexing rules are defined in TOML files; no recompilation needed for new chains
-- **Explicit pallet rules** — every indexed event mapping lives in TOML, including SDK pallets
-- **Resume-safe** — tracks indexed block spans and resumes after restart
-- **Index-spec hot reload** — watches the active index-spec path and restarts only the RPC/indexer loop on accepted spec changes
-- **Safe shutdown** — persists progress and exits cleanly on termination signals or when the upstream node disconnects
-- **Backward indexing** — indexes from the chain tip backwards while simultaneously tracking new blocks
-- **WebSocket API** — query events by key, subscribe to live updates, and inspect chain metadata
-- **Optional finalized proofs** — `acuity_getEvents` can include verifiable `System.Events` storage proofs when the indexer runs in finalized mode
-- **Concurrent block fetching** — configurable queue depth for parallel backfill and HEAD catch-up requests
+Additional project documents:
 
-Any Substrate chain can be supported by generating or writing an index specification TOML and passing it as `<INDEX_SPEC>`.
+- architecture notes: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+- changelog: [`CHANGELOG.md`](./CHANGELOG.md)
 
-## Requirements
-
-- Rust **stable** (see `rust-toolchain.toml`)
-- A running Substrate node with WebSocket RPC enabled
-- The node must be started with `--state-pruning archive-canonical`
-- `polkadot-omni-node` if you want to use the in-repo synthetic runtime for local integration tests and benchmarks
-
-## Installation
-
-```bash
-cargo install --path .
-```
-
-For Rust clients consuming the WebSocket API, see
-[`acuity-index-api-rs` on crates.io](https://crates.io/crates/acuity-index-api-rs).
-
-For fuller narrative documentation, examples, and workflow guides, build and open
-the in-repo book:
+Build or serve the book locally with:
 
 ```bash
 just book-build
 just book-serve
 ```
+
+## Features
+
+- Config-driven indexing with TOML index specifications
+- Schema-less event decoding for Substrate runtimes
+- Resumable indexing with persisted block-span tracking
+- WebSocket API for queries and subscriptions
+- Optional finalized-mode proofs for indexed events
+- Hot reload of the active index specification file
+- Concurrent block fetching for backfill and head catch-up
+
+## Requirements
+
+- Rust stable (see [`rust-toolchain.toml`](./rust-toolchain.toml))
+- A running Substrate node with WebSocket RPC enabled
+- Historical state available via `--state-pruning archive-canonical`
+
+## Installation
+
+### Build from source
+
+```bash
+cargo build --release
+```
+
+### Install the binary locally
+
+```bash
+cargo install --path .
+```
+
+For more setup details, see [`book/src/installation.md`](./book/src/installation.md).
+
+## Quick start
+
+Generate a starter index specification from a live node:
+
+```bash
+acuity-index generate-index-spec ./mychain.toml --url ws://127.0.0.1:9944
+```
+
+Run the indexer with that spec:
+
+```bash
+acuity-index run ./mychain.toml --url ws://127.0.0.1:9944
+```
+
+By default, the WebSocket API listens on port `8172`.
+
+To remove the local index for a spec:
+
+```bash
+acuity-index purge-index ./mychain.toml
+```
+
+For a fuller walkthrough, see [`book/src/quickstart.md`](./book/src/quickstart.md).
 
 ## Usage
 
@@ -79,173 +104,23 @@ acuity-index <COMMAND>
 |---|---|
 | `run <INDEX_SPEC> [OPTIONS]` | Run the indexer for an index specification |
 | `purge-index <INDEX_SPEC> [OPTIONS]` | Delete the index database for an index spec |
-| `generate-index-spec <INDEX_SPEC> --url <URL> [--force|-f]` | Inspect live metadata and write a starter index specification TOML file |
+| `generate-index-spec <INDEX_SPEC> --url <URL> [--force|-f]` | Inspect live metadata and write a starter index specification |
 
-### Run Options
-
-| Option | Default | Description |
-|---|---|---|
-| `--options-config <PATH>` | — | Path to a runtime options TOML file |
-| `-d, --db-path <PATH>` | `~/.local/share/acuity-index/<spec-name>/db` | Database directory |
-| `--db-mode <MODE>` | `low-space` | `low-space` or `high-throughput` |
-| `--db-cache-capacity <SIZE>` | `1024.00 MiB` | Maximum sled page-cache size |
-| `-u, --url <URL>` | index spec default | WebSocket URL of the Substrate node |
-| `--queue-depth <N>` | `1` | Concurrent block requests during backfill and HEAD catch-up |
-| `-f, --finalized` | `false` | Only index finalized blocks |
-| `-p, --port <PORT>` | `8172` | WebSocket API port |
-| `--metrics-port <PORT>` | — | Optional HTTP `/metrics` port for OpenMetrics scraping |
-| `-v / -q` | — | Increase / decrease log verbosity |
-
-`run` requires a positional `<INDEX_SPEC>` path before any options.
-
-Runtime option precedence: **CLI flags > `--options-config` file > built-in defaults**.
-`index_variant` is a top-level index spec field, not a runtime option.
-
-When clients send `acuity_getEvents`, each returned event also includes a top-level
-`timestamp` field sourced from the block's `Timestamp::Now` storage value when
-available. For blocks where that storage value is unavailable, the API returns
-`timestamp: 0`. The response always includes a `proofs` object. Proofs are only
-available while the indexer is running with `--finalized` indexing; otherwise the
-response returns `proofs.available: false` with an explanatory `proofs.reason`
-and `proofs.message`.
-
-When `run <INDEX_SPEC>` points to a file, `acuity-index` watches that file for changes.
-Accepted spec edits restart only the RPC/indexer loop; the WebSocket and metrics
-servers stay up. Changes to `name` or `genesis_hash` are rejected and the current
-spec keeps running.
-
-### Examples
-
-Use a custom index specification:
+For full CLI details, use:
 
 ```bash
-acuity-index run ./mychain.toml --url wss://mynode:443
+acuity-index --help
+acuity-index run --help
 ```
 
-Generate a starter index specification from a live node:
+For complete command and runtime reference, see [`book/src/cli.md`](./book/src/cli.md),
+[`book/src/configuration.md`](./book/src/configuration.md), and
+[`book/src/api.md`](./book/src/api.md).
 
-```bash
-acuity-index generate-index-spec ./mychain.toml --url wss://mynode:443
-```
+## Index specification example
 
-Purge an existing index:
-
-```bash
-acuity-index purge-index ./mychain.toml
-```
-
-If the index-spec output file already exists, `generate-index-spec` fails unless `--force` or `-f` is supplied.
-
-## Local Synthetic Devnet
-
-This repository now includes a minimal in-repo Polkadot SDK runtime under `runtime/`, and a matching synthetic index spec renderer in `src/synthetic_devnet.rs`.
-
-The synthetic runtime is intentionally small and deterministic:
-
-- one custom `Synthetic` pallet emits searchable `u32`, `bytes32`, `account_id`, and multi-value event fields
-- the local runtime now includes GRANDPA so finalized-head and proof-oriented flows can be exercised end to end
-- `just synthetic-node` runs `polkadot-omni-node --instant-seal --pool-type single-state` for ad hoc local experimentation and smoke-style seeding
-- `just benchmark-indexing` starts its own disposable synthetic node with `--dev-block-time 100 --pool-type single-state` and does not use `--instant-seal`
-
-The ignored integration suite also includes proof-oriented coverage:
-
-- default mode verifies that proofs are reported as unavailable when the indexer is not running with `--finalized`
-- finalized-mode coverage starts a libp2p-enabled local node, runs the indexer with `--finalized`, requests proofs through `acuity_getEvents`, and verifies the returned header plus storage proof against the block state root
-
-Useful recipes:
-
-```bash
-# build the in-repo runtime, emit a chain spec, and run the synthetic dev node locally
-just synthetic-node
-
-# seed a small deterministic dataset for integration testing against the running node
-just seed-smoke
-
-# run the ignored node-backed integration suite
-just test-integration
-
-# auto-start a timed synthetic node, seed many event-dense blocks, and benchmark end-to-end indexing throughput
-just benchmark-indexing
-```
-
-The benchmark recipe starts its own synthetic node on the selected RPC port. Its bulk seeder submits one transaction, waits until that transaction has been included in a block, and only then submits the next one. The reported event rate is based on the synthetic pallet events submitted by the seeder.
-
-By default, `just benchmark-indexing` starts at `queue_depth=4`, seeds 5000 burst blocks with `burst_count=128`, waits up to 600 seconds for each benchmark run to become ready, prints the JSON report for each successful run, then prints a summary table and the first failing `queue_depth`.
-
-The ignored synthetic integration suite exercises the real node-backed stack end
-to end, including `acuity_indexStatus`, `acuity_getEventMetadata`, `acuity_getEvents`, subscription
-flows, live notifications, selected WebSocket limits/error behavior, and
-restart/reconnect behavior.
-
-`just` recipe overrides are positional here. `queue_depth` is the starting depth, and each successful run doubles it until a run fails. To change the benchmark inputs, use:
-
-```bash
-just benchmark-indexing <rpc_port> <queue_depth> <batch_start> <batches> <burst_count> <timeout_secs>
-```
-
-For example:
-
-```bash
-just benchmark-indexing 9944 8 1000 1000 128 600
-```
-
-`generate-index-spec` currently requires runtime metadata v14 or higher.
-The generator uses `subxt` metadata decoding to inspect pallets and event fields,
-and the current implementation only converts modern FRAME metadata layouts. Nodes
-serving older metadata, such as v13 from early chain history before a runtime
-upgrade, are rejected with an explicit error instead of a generic decode failure.
-
-This most often happens when pointing at a node that is still syncing from an old
-genesis/runtime snapshot. In that case, wait until the chain has synced past the
-runtime upgrade that introduced v14+ metadata and try again.
-
-## Syncing And Warp-Synced Nodes
-
-`acuity-index` indexes backwards from the observed tip while also tracking new blocks at the head. When the node is syncing quickly, `--queue-depth` is used for both historical backfill and forward HEAD catch-up so the indexer can catch up instead of processing only one new head block at a time.
-
-The indexer requires historical state to be available. If the node prunes historical state, indexing stops with an explicit error explaining that `--state-pruning` must be set to `archive-canonical`.
-
-For `polkadot-omni-node`, a working example is:
-
-```bash
-polkadot-omni-node --chain target/dev-chain-spec.json --dev --dev-block-time 1000 --state-pruning archive-canonical
-```
-
-Without `--state-pruning archive-canonical`, the node may still serve recent heads, but `acuity-index` will fail once it needs historical state during backfill.
-
-## Shutdown Behavior
-
-`acuity-index` persists the active in-memory span before exit so it can resume safely on the next start.
-
-Clean shutdown happens in two cases:
-
-- the process receives a termination signal
-- a fatal startup/runtime error forces the process to exit
-
-If the upstream node closes the live block stream or the RPC connection drops, `acuity-index` saves the active span, keeps the WebSocket server running, and reconnects with exponential backoff instead of exiting. Local requests such as `acuity_indexStatus` keep working, while RPC-backed requests such as `acuity_getEventMetadata` and `acuity_getEvents` return an upstream-unavailable error until the node comes back.
-
-If the watched index spec changes, `acuity-index` validates the new file before
-switching. Accepted changes stop the current indexer cleanly, persist the active
-span, and immediately restart indexing with the new spec. Invalid edits, or edits
-that change `name` or `genesis_hash`, are rejected without killing the process.
-
-On actual shutdown, the process logs the shutdown reason, stops the WebSocket server, flushes sled, and exits cleanly instead of panicking.
-
-Startup failures such as invalid cache-size configuration, genesis-hash mismatches, database open errors, RPC initialization failures, and signal-registration failures are also reported as structured errors and logged before the process exits.
-
-## Index Specification
-
-Each chain is described by an index specification TOML file passed as `<INDEX_SPEC>`.
-
-If a runtime includes multiple instances of the same Substrate pallet under
-different names, treat them as distinct pallets in the config. Each instance
-has its own pallet name in metadata and its own independent storage, calls,
-events, and errors, even when the runtime uses the same pallet code for both.
-This only applies to instantiable pallets; a non-instantiable pallet cannot be
-added to a runtime more than once. For example, a runtime may include
-`pallet_collective` twice as `Council` and `TechnicalCommittee`; those should
-be configured as two separate pallets because proposals, votes, and membership
-are tracked independently for each instance.
+Each chain is described by an index specification TOML file passed as
+`<INDEX_SPEC>`.
 
 ```toml
 name = "mychain"
@@ -254,14 +129,12 @@ default_url = "wss://my-node:443"
 index_variant = false
 spec_change_blocks = [0]
 
-# All query keys must be declared once at schema level
 [keys]
 account_id = "bytes32"
 item_id = "bytes32"
 revision_id = "u32"
 item_revision = { fields = ["bytes32", "u32"] }
 
-# Explicit pallet mappings
 [[pallets]]
 name = "MyPallet"
 
@@ -269,141 +142,64 @@ name = "MyPallet"
 name = "SomeEvent"
 
 [[pallets.events.params]]
-field = "who"       # field name, or "0" for positional
-key = "account_id"  # declared scalar key
+field = "who"
+key = "account_id"
 
 [[pallets.events.params]]
 field = "item_id"
-key = "item_id"     # declared query key name
-
-[[pallets.events.params]]
-fields = ["item_id", "revision_id"]
-key = "item_revision" # binary composite query key
-```
-
-`spec_change_blocks` lists the block heights where a new index-spec revision starts.
-It must start with `0` and be strictly increasing. When a new boundary is added in
-the past, existing indexed spans are kept through the block before that boundary,
-and the suffix starting at the earliest affected boundary is re-indexed.
-
-If you change `index_variant` and want historical data re-indexed
-under the new setting, add a new `spec_change_blocks` boundary.
-
-Changes to `default_url`, explicit pallet mappings, declared keys,
-`index_variant` or `spec_change_blocks` are applied by the
-hot-reload path when the watched spec file is updated.
-
-### Runtime Options Config
-
-Runtime options can be loaded from a separate TOML file via `--options-config`.
-This is useful for deployment-specific settings (like a WebSocket URL, database path,
-or listener port) that vary across environments.
-`index_variant` lives in the index spec, not in the runtime options file.
-
-All fields are optional — omit any field to keep its built-in default:
-
-| Field | Type | Default |
-|---|---|---|
-| `url` | string | index spec `default_url` |
-| `db_path` | string | `~/.local/share/acuity-index/<chain>/db` |
-| `db_mode` | string (`"low_space"` or `"high_throughput"`) | `low_space` |
-| `db_cache_capacity` | string | `1024.00 MiB` |
-| `queue_depth` | integer | `1` |
-| `finalized` | boolean | `false` |
-| `port` | integer | `8172` |
-| `metrics_port` | integer | disabled |
-
-Merge precedence: **CLI flags > `--options-config` file > built-in defaults**.
-`finalized` is enabled if either the CLI flag or the options config field is `true`.
-
-### Scalar Keys
-
-Every scalar key must be declared in `[keys]` with one of these kinds:
-
-| Kind | Stored/query value |
-|---|---|
-| `bytes32` | 32-byte hex value |
-| `u32` | 32-bit unsigned integer |
-| `u64` | 64-bit unsigned integer |
-| `u128` | 128-bit unsigned integer |
-| `string` | UTF-8 string |
-| `bool` | boolean |
-
-Example:
-
-```toml
-[keys]
-para_id = "u32"
-candidate_hash = "bytes32"
-
-[[pallets.events.params]]
-field = "para_id"
-key = "para_id"
-
-[[pallets.events.params]]
-field = "candidate_hash"
-key = "candidate_hash"
-```
-
-### Composite Keys
-
-Composite keys let the indexer build one binary query key from multiple
-event fields. They are defined in `[keys]` and referenced with
-`fields = ["...", "..."]` in event params.
-
-Example:
-
-```toml
-[keys]
-account_id = "bytes32"
-item_id = "bytes32"
-revision_id = "u32"
-item_revision = { fields = ["bytes32", "u32"] }
-
-[[pallets]]
-name = "ContentReactions"
-
-[[pallets.events]]
-name = "SetReactions"
+key = "item_id"
 
 [[pallets.events.params]]
 fields = ["item_id", "revision_id"]
 key = "item_revision"
-
-[[pallets.events.params]]
-field = "reactor"
-key = "account_id"
 ```
 
-Notes:
+For the full index specification format and semantics, see
+[`book/src/configuration.md`](./book/src/configuration.md).
 
-- Use `field = "..."` for declared scalar keys.
-- Use `fields = [...]` only for declared composite keys.
-- Composite key values are ordered and binary encoded, so field order matters.
+## Development
 
-Generated specs may auto-declare structurally inferred keys such as
-`account_id = "bytes32"` when a field name/type clearly looks like an account
-identifier. Semantic aliases derived from pallet or event context, such as
-`ref_index`, are not inferred and must be declared explicitly by the spec author.
+Common development commands:
 
-## WebSocket API
+```bash
+cargo build
+cargo test
+```
 
-The complete WebSocket API reference now lives in [`API.md`](API.md).
+Using `just`:
 
-The public WebSocket service also enforces connection and request limits. See
-[`SECURITY.md`](./SECURITY.md) for the current security review, deployment
-guidance, and operational limits.
+```bash
+just build
+just test
+just release-checks
+```
 
-If you are integrating from Rust, the published client crate is
-[`acuity-index-api-rs`](https://crates.io/crates/acuity-index-api-rs).
+Documentation:
 
-It covers:
+```bash
+just book-build
+just book-serve
+```
 
-- request and response envelopes
-- all request types
-- notification types
-- key formats
-- composite key request shapes
-- pagination semantics
-- error responses
-- backpressure and subscription termination behavior
+See [`book/src/contributing.md`](./book/src/contributing.md) for contributor-oriented notes.
+
+## Synthetic devnet
+
+The repository includes a small in-repo synthetic runtime under [`runtime/`](./runtime/)
+for local integration testing and benchmarking.
+
+Useful commands:
+
+```bash
+just synthetic-node
+just seed-smoke
+just test-integration
+just benchmark-indexing
+```
+
+`polkadot-omni-node` is required for the synthetic runtime workflows.
+For more detail, see [`book/src/synthetic-devnet.md`](./book/src/synthetic-devnet.md).
+
+## License
+
+Licensed under Apache-2.0.
