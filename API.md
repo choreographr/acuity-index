@@ -470,7 +470,7 @@ Sent to status subscribers whenever the persisted indexed span advances.
 
 Payload (in `params.result`):
 
-- same shape as the `acuity_indexStatus` response payload
+- `spans`: same array returned by `acuity_indexStatus`
 
 Example:
 
@@ -482,7 +482,7 @@ Example:
     "subscription": "sub_abc123",
     "result": {
       "type": "status",
-      "data": [
+      "spans": [
         {"start": 1, "end": 1001}
       ]
     }
