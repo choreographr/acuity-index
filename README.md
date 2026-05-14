@@ -1,10 +1,11 @@
 # acuity-index
 
 `acuity-index` is a configurable event indexer for Substrate-based blockchains.
-It connects to a node over WebSocket RPC, decodes on-chain events without
-chain-specific generated types, stores indexed references in an embedded
-[`sled`](https://github.com/spacejam/sled) database, and exposes the indexed data
-through its own WebSocket API.
+It is primarily intended for dapps to query directly as an event indexer,
+although it can serve other consumers as well. It connects to a node over
+WebSocket RPC, decodes on-chain events without chain-specific generated types,
+stores indexed references in an embedded [`sled`](https://github.com/spacejam/sled)
+database, and exposes the indexed data through its own WebSocket API.
 
 This repository is primarily a Rust CLI application.
 
@@ -41,8 +42,8 @@ just book-serve
 - Config-driven indexing with TOML index specifications
 - Schema-less event decoding for Substrate runtimes
 - Resumable indexing with persisted block-span tracking
-- WebSocket API for queries and subscriptions
-- Optional finalized-mode proofs for indexed events
+- WebSocket API for dapp queries and subscriptions
+- Optional finalized-mode proofs for indexed events, including GRANDPA proofs for light-client verification
 - Hot reload of the active index specification file
 - Concurrent block fetching for backfill and head catch-up
 
@@ -177,8 +178,7 @@ just release-checks
 Documentation:
 
 ```bash
-just book-build
-just book-serve
+# see the mdBook under book/src/
 ```
 
 See [`book/src/contributing.md`](./book/src/contributing.md) for contributor-oriented notes.

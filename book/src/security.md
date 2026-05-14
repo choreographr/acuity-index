@@ -1,8 +1,8 @@
 # Security And Deployment
 
-This chapter summarizes the current security posture of the Internet-facing
+This chapter summarizes the current deployment posture of the Internet-facing
 surfaces in this repository, the hardening already implemented, and the main
-residual risks that remain.
+remaining requirements before the indexer is exposed directly to dapp clients.
 
 It is a companion to [Architecture](./architecture.md) and [WebSocket API](./api.md),
 and should reflect the current code layout under `src/main.rs`,
@@ -118,23 +118,22 @@ The following protections are implemented in the current server.
 
 ## Residual Risks
 
-The most important remaining security concerns are below.
+The most important remaining deployment requirements are below.
 
-### 1. No authentication or authorization
+### 1. Meter every query and require payment
 
-The service is intentionally network-accessible and does not authenticate clients.
+Before direct public exposure, the indexer needs per-query metering and payment enforcement so the index provider can bill usage.
 
 Impact:
 
-- Any reachable client can query indexed data.
-- Any reachable client can subscribe to live updates.
-- Any reachable client can call metadata and event-hydration paths when RPC is available.
-- In finalized mode, any reachable client can request finalized event proofs through `acuity_getEvents`.
+- Every query should be counted and accounted for.
+- Expensive request paths should be covered by the metering model.
+- Payment checks should gate access before event hydration and proof retrieval are served.
+- Direct dapp access should remain tied to the provider's billing policy.
 
 Assessment:
 
-- This is still the largest deliberate exposure.
-- It may be acceptable for a fully public data service, but it should be treated as a product decision, not an implicit safe default.
+- This is the primary remaining product requirement before treating the service as Internet-facing.
 
 ### 2. No in-process TLS
 
@@ -251,30 +250,29 @@ Assessment:
 
 Highest-value remaining work:
 
-1. Add network-aware rate limiting at the reverse proxy or edge, and consider in-process quotas if public abuse is expected.
-2. Decide whether all hydrated event retrieval and finalized proof retrieval should remain public.
-3. Require TLS termination in all documented deployment paths.
-4. Keep the metrics endpoint internal-only by default in deployment examples.
-5. Revisit authentication or signed access if differentiated access, abuse attribution, or private deployments matter.
+1. Add per-query metering for all public request paths.
+2. Require cryptocurrency payment to the index provider before serving billable queries.
+3. Define which request types are billable and enforce that policy before hydration or proof retrieval.
+4. Continue to require TLS termination in documented deployment paths.
+5. Keep the metrics endpoint internal-only by default in deployment examples.
 6. Track or remediate `cargo audit` findings, especially long-term `sled` replacement/containment work and transitive cryptography dependency maintenance risk.
 7. Continue expanding end-to-end tests around overload and backpressure behavior.
 
 ## Deployment Guidance
 
-For Internet exposure, deploy behind infrastructure that provides at least:
+For Internet exposure, deploy behind infrastructure that supports the billing and metering model:
 
 - TLS termination
-- request and connection logging
-- per-IP and/or per-network rate limiting
-- firewalling or edge filtering
-- overload monitoring and alerting
+- request logging for query accounting
+- per-query metering
+- cryptocurrency payment enforcement at the access edge or application layer
 - health checks
-- internal-only exposure, authentication, or equivalent filtering for the metrics port when enabled
+- internal-only exposure for the metrics port when enabled
 
-Also assume the upstream Substrate node is part of the security envelope:
+Also assume the upstream Substrate node is part of the service envelope:
 
 - keep RPC access restricted where possible
 - run archival pruning settings required by the application
 - monitor RPC availability separately from the public WebSocket service
 
-Without those controls, the service remains materially more exposed to abuse even with the application-level hardening now present.
+Without metering and payment enforcement, the service should not be treated as ready for direct public dapp access.
