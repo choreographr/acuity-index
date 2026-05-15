@@ -14,6 +14,10 @@ The project is intentionally config-driven:
 - returned events can include GRANDPA proofs so light clients can verify correctness
 - operators can update accepted index specs without restarting the public service
 
+## Funding
+
+Acuity Index was originally called Hybrid and was funded by two ([1](https://github.com/w3f/Grants-Program/blob/master/applications/hybrid.md), [2](https://github.com/w3f/Grants-Program/blob/master/applications/hybrid2.md)) Web3 Foundation grants and a Kusama Treasury [referendum](https://kusama.subsquare.io/referenda/534). A second funding referendum [failed](https://kusama.subsquare.io/referenda/567). Treasury funding for a Kusama Forum based on Acuity Index has been [secured](https://kusama.subsquare.io/referenda/603).
+
 ## Who This Book Is For
 
 This book serves three overlapping audiences:
