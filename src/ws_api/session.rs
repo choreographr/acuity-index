@@ -1,8 +1,15 @@
 use crate::{errors::IndexError, protocol::*, runtime_state::RuntimeState};
 
 use futures::{SinkExt, StreamExt};
-use std::{collections::HashSet, net::SocketAddr, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
-use tokio::net::{TcpStream};
+use std::{
+    collections::HashSet,
+    net::SocketAddr,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
+use tokio::net::TcpStream;
 use tokio::sync::{mpsc, mpsc::Sender, watch};
 use tokio::time::{self, Duration};
 use tokio_tungstenite::tungstenite::{self};
@@ -11,9 +18,7 @@ use tracing::{error, info};
 use super::{
     disconnect_error,
     listener::websocket_config,
-    requests::{
-        enqueue_subscription_message, process_msg,
-    },
+    requests::{enqueue_subscription_message, process_msg},
     validation::validate_subscription_request,
 };
 
@@ -106,7 +111,8 @@ async fn handle_connection_inner(
     let mut live_ws_config = *live_ws_config_rx.borrow();
     let mut last_activity = time::Instant::now();
     let mut idle_deadline = idle_deadline_for(last_activity, live_ws_config.idle_timeout_secs);
-    let mut heartbeat_interval = time::interval(heartbeat_interval_for(live_ws_config.idle_timeout_secs));
+    let mut heartbeat_interval =
+        time::interval(heartbeat_interval_for(live_ws_config.idle_timeout_secs));
     heartbeat_interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
     heartbeat_interval.tick().await;
 
@@ -277,7 +283,9 @@ fn update_subscription_state(
     response: &JsonRpcResponse,
 ) {
     // Only track successful subscribe/unsubscribe responses
-    let JsonRpcResponse::Success(success) = response else { return };
+    let JsonRpcResponse::Success(success) = response else {
+        return;
+    };
 
     match method {
         "acuity_subscribeStatus" => {
@@ -311,7 +319,11 @@ mod tests {
     };
     use futures::{SinkExt, StreamExt};
     use std::sync::{Arc, atomic::AtomicUsize};
-    use tokio::{net::TcpListener, sync::{mpsc, watch}, time::Duration};
+    use tokio::{
+        net::TcpListener,
+        sync::{mpsc, watch},
+        time::Duration,
+    };
     use tokio_tungstenite::{connect_async, tungstenite::Message};
 
     #[tokio::test]
@@ -325,13 +337,32 @@ mod tests {
         let connection_count = Arc::new(AtomicUsize::new(1));
         let server = tokio::spawn(async move {
             let (stream, peer_addr) = listener.accept().await.unwrap();
-            handle_connection(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), DEFAULT_LIVE_WS_CONFIG.subscription_buffer_size, live_ws_rx).await
+            handle_connection(
+                runtime,
+                stream,
+                peer_addr,
+                trees,
+                sub_tx,
+                ConnectionSlotGuard::new(connection_count),
+                DEFAULT_LIVE_WS_CONFIG.subscription_buffer_size,
+                live_ws_rx,
+            )
+            .await
         });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
-        let request = format!(r#"{{"jsonrpc":"2.0","id":15,"method":"acuity_getEvents","params":{{"key":{{"type":"Custom","value":{{"name":"too_many","kind":"composite","value":[{}]}}}},"limit":100}}}}"#, std::iter::repeat_n(r#"{"kind":"u32","value":1}"#, crate::ws_api::validation::MAX_COMPOSITE_ELEMENTS + 1).collect::<Vec<_>>().join(","));
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":15,"method":"acuity_getEvents","params":{{"key":{{"type":"Custom","value":{{"name":"too_many","kind":"composite","value":[{}]}}}},"limit":100}}}}"#,
+            std::iter::repeat_n(
+                r#"{"kind":"u32","value":1}"#,
+                crate::ws_api::validation::MAX_COMPOSITE_ELEMENTS + 1
+            )
+            .collect::<Vec<_>>()
+            .join(",")
+        );
         client.send(Message::Text(request.into())).await.unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert_eq!(response["id"], 15);
         assert_eq!(response["error"]["code"], -32602);
         assert_eq!(response["error"]["data"]["reason"], "invalid_key");
@@ -344,27 +375,84 @@ mod tests {
         let trees = temp_trees();
         let runtime = Arc::new(RuntimeState::new(1));
         let (existing_tx, _existing_rx) = mpsc::channel(1);
-        crate::indexer::process_sub_msg(runtime.as_ref(), &LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG }, SubscriptionMessage::SubscribeStatus { subscription_id: "sub_existing".into(), tx: existing_tx.clone(), response_tx: None }).unwrap();
+        crate::indexer::process_sub_msg(
+            runtime.as_ref(),
+            &LiveWsConfig {
+                max_total_subscriptions: 1,
+                ..DEFAULT_LIVE_WS_CONFIG
+            },
+            SubscriptionMessage::SubscribeStatus {
+                subscription_id: "sub_existing".into(),
+                tx: existing_tx.clone(),
+                response_tx: None,
+            },
+        )
+        .unwrap();
         let (sub_tx, sub_rx) = mpsc::channel(4);
-        let (_dispatcher_live_ws_tx, dispatcher_live_ws_rx) = watch::channel(LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG });
-        let dispatcher = spawn_subscription_dispatcher(runtime.clone(), sub_rx, dispatcher_live_ws_rx);
+        let (_dispatcher_live_ws_tx, dispatcher_live_ws_rx) = watch::channel(LiveWsConfig {
+            max_total_subscriptions: 1,
+            ..DEFAULT_LIVE_WS_CONFIG
+        });
+        let dispatcher =
+            spawn_subscription_dispatcher(runtime.clone(), sub_rx, dispatcher_live_ws_rx);
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
-        let ws_config = LiveWsConfig { max_subscriptions_per_connection: 1, idle_timeout_secs: 0, ..DEFAULT_LIVE_WS_CONFIG };
+        let ws_config = LiveWsConfig {
+            max_subscriptions_per_connection: 1,
+            idle_timeout_secs: 0,
+            ..DEFAULT_LIVE_WS_CONFIG
+        };
         let (_live_ws_tx, live_ws_rx) = watch::channel(ws_config);
         let connection_count = Arc::new(AtomicUsize::new(1));
-        let server = tokio::spawn({ let runtime = runtime.clone(); let trees = trees.clone(); let sub_tx = sub_tx.clone(); async move { let (stream, peer_addr) = listener.accept().await.unwrap(); handle_connection(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), ws_config.subscription_buffer_size, live_ws_rx).await } });
+        let server = tokio::spawn({
+            let runtime = runtime.clone();
+            let trees = trees.clone();
+            let sub_tx = sub_tx.clone();
+            async move {
+                let (stream, peer_addr) = listener.accept().await.unwrap();
+                handle_connection(
+                    runtime,
+                    stream,
+                    peer_addr,
+                    trees,
+                    sub_tx,
+                    ConnectionSlotGuard::new(connection_count),
+                    ws_config.subscription_buffer_size,
+                    live_ws_rx,
+                )
+                .await
+            }
+        });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
         let first_request = serde_json::json!({"jsonrpc":"2.0","id":18,"method":"acuity_subscribeEvents","params":{"key":{"type":"Custom","value":{"name":"pool_id","kind":"u32","value":1}}}});
-        client.send(Message::Text(first_request.to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(first_request.to_string().into()))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert!(response.get("error").is_some());
-        crate::indexer::process_sub_msg(runtime.as_ref(), &LiveWsConfig { max_total_subscriptions: 1, ..DEFAULT_LIVE_WS_CONFIG }, SubscriptionMessage::UnsubscribeStatus { subscription_id: "sub_existing".into(), response_tx: None }).unwrap();
+        crate::indexer::process_sub_msg(
+            runtime.as_ref(),
+            &LiveWsConfig {
+                max_total_subscriptions: 1,
+                ..DEFAULT_LIVE_WS_CONFIG
+            },
+            SubscriptionMessage::UnsubscribeStatus {
+                subscription_id: "sub_existing".into(),
+                response_tx: None,
+            },
+        )
+        .unwrap();
         let second_request = serde_json::json!({"jsonrpc":"2.0","id":19,"method":"acuity_subscribeEvents","params":{"key":{"type":"Custom","value":{"name":"pool_id","kind":"u32","value":2}}}});
-        client.send(Message::Text(second_request.to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(second_request.to_string().into()))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert!(response.get("result").is_some());
         assert!(response["result"].as_str().unwrap().starts_with("sub_"));
         client.close(None).await.unwrap();
@@ -375,7 +463,10 @@ mod tests {
 
     #[test]
     fn heartbeat_interval_is_bounded_by_idle_timeout_and_default() {
-        assert_eq!(heartbeat_interval_for(0), Duration::from_secs(DEFAULT_HEARTBEAT_INTERVAL_SECS));
+        assert_eq!(
+            heartbeat_interval_for(0),
+            Duration::from_secs(DEFAULT_HEARTBEAT_INTERVAL_SECS)
+        );
         assert_eq!(heartbeat_interval_for(1), Duration::from_secs(1));
         assert_eq!(heartbeat_interval_for(2), Duration::from_secs(1));
         assert_eq!(heartbeat_interval_for(300), Duration::from_secs(120));
@@ -394,14 +485,38 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let runtime = disconnected_runtime();
-        let ws_config = LiveWsConfig { idle_timeout_secs: 0, ..DEFAULT_LIVE_WS_CONFIG };
+        let ws_config = LiveWsConfig {
+            idle_timeout_secs: 0,
+            ..DEFAULT_LIVE_WS_CONFIG
+        };
         let (_live_ws_tx, live_ws_rx) = watch::channel(ws_config);
         let connection_count = Arc::new(AtomicUsize::new(1));
-        let server = tokio::spawn(async move { let (stream, peer_addr) = listener.accept().await.unwrap(); handle_connection(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), ws_config.subscription_buffer_size, live_ws_rx).await });
+        let server = tokio::spawn(async move {
+            let (stream, peer_addr) = listener.accept().await.unwrap();
+            handle_connection(
+                runtime,
+                stream,
+                peer_addr,
+                trees,
+                sub_tx,
+                ConnectionSlotGuard::new(connection_count),
+                ws_config.subscription_buffer_size,
+                live_ws_rx,
+            )
+            .await
+        });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
-        client.send(Message::Text(serde_json::json!({"jsonrpc":"2.0","id":20,"method":"acuity_indexStatus"}).to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(
+                serde_json::json!({"jsonrpc":"2.0","id":20,"method":"acuity_indexStatus"})
+                    .to_string()
+                    .into(),
+            ))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert!(response.get("result").is_some());
         assert!(response["result"]["spans"].is_array());
         client.close(None).await.unwrap();
@@ -417,21 +532,55 @@ mod tests {
         let dispatcher = spawn_subscription_dispatcher(runtime.clone(), sub_rx, live_ws_rx);
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
-        let initial_ws_config = LiveWsConfig { max_subscriptions_per_connection: 2, idle_timeout_secs: 0, ..DEFAULT_LIVE_WS_CONFIG };
+        let initial_ws_config = LiveWsConfig {
+            max_subscriptions_per_connection: 2,
+            idle_timeout_secs: 0,
+            ..DEFAULT_LIVE_WS_CONFIG
+        };
         live_ws_tx.send(initial_ws_config).unwrap();
         let live_ws_rx = live_ws_tx.subscribe();
         let (config_applied_tx, mut config_applied_rx) = mpsc::unbounded_channel();
         let connection_count = Arc::new(AtomicUsize::new(1));
-        let server = tokio::spawn({ let runtime = runtime.clone(); let trees = trees.clone(); let sub_tx = sub_tx.clone(); async move { let (stream, peer_addr) = listener.accept().await.unwrap(); handle_connection_inner(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), initial_ws_config.subscription_buffer_size, live_ws_rx, Some(config_applied_tx)).await } });
+        let server = tokio::spawn({
+            let runtime = runtime.clone();
+            let trees = trees.clone();
+            let sub_tx = sub_tx.clone();
+            async move {
+                let (stream, peer_addr) = listener.accept().await.unwrap();
+                handle_connection_inner(
+                    runtime,
+                    stream,
+                    peer_addr,
+                    trees,
+                    sub_tx,
+                    ConnectionSlotGuard::new(connection_count),
+                    initial_ws_config.subscription_buffer_size,
+                    live_ws_rx,
+                    Some(config_applied_tx),
+                )
+                .await
+            }
+        });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
         client.send(Message::Text(serde_json::json!({"jsonrpc":"2.0","id":21,"method":"acuity_subscribeEvents","params":{"key":{"type":"Custom","value":{"name":"pool_id","kind":"u32","value":1}}}}).to_string().into())).await.unwrap();
         let _ = client.next().await.unwrap().unwrap();
-        let updated_config = LiveWsConfig { max_subscriptions_per_connection: 1, ..initial_ws_config };
+        let updated_config = LiveWsConfig {
+            max_subscriptions_per_connection: 1,
+            ..initial_ws_config
+        };
         live_ws_tx.send(updated_config).unwrap();
         assert_eq!(config_applied_rx.recv().await.unwrap(), updated_config);
-        client.send(Message::Text(serde_json::json!({"jsonrpc":"2.0","id":22,"method":"acuity_subscribeStatus"}).to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(
+                serde_json::json!({"jsonrpc":"2.0","id":22,"method":"acuity_subscribeStatus"})
+                    .to_string()
+                    .into(),
+            ))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert!(response.get("error").is_some());
         client.close(None).await.unwrap();
         assert!(server.await.unwrap().is_ok());
@@ -443,27 +592,62 @@ mod tests {
     async fn get_events_returns_temporarily_unavailable_without_runtime_clients() {
         let trees = temp_trees();
         let runtime = disconnected_runtime();
-        let key = Key::Custom(CustomKey { name: "ref_index".into(), value: CustomValue::U32(7) });
+        let key = Key::Custom(CustomKey {
+            name: "ref_index".into(),
+            value: CustomValue::U32(7),
+        });
         key.write_db_key(&trees, 10, 1).unwrap();
         key.write_db_key(&trees, 11, 1).unwrap();
         let (sub_tx, _sub_rx) = mpsc::channel(4);
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
-        let initial_ws_config = LiveWsConfig { idle_timeout_secs: 0, max_events_limit: 100, ..DEFAULT_LIVE_WS_CONFIG };
+        let initial_ws_config = LiveWsConfig {
+            idle_timeout_secs: 0,
+            max_events_limit: 100,
+            ..DEFAULT_LIVE_WS_CONFIG
+        };
         let (live_ws_tx, live_ws_rx) = watch::channel(initial_ws_config);
         let (config_applied_tx, mut config_applied_rx) = mpsc::unbounded_channel();
         let connection_count = Arc::new(AtomicUsize::new(1));
-        let server = tokio::spawn({ let runtime = runtime.clone(); let trees = trees.clone(); async move { let (stream, peer_addr) = listener.accept().await.unwrap(); handle_connection_inner(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), initial_ws_config.subscription_buffer_size, live_ws_rx, Some(config_applied_tx)).await } });
+        let server = tokio::spawn({
+            let runtime = runtime.clone();
+            let trees = trees.clone();
+            async move {
+                let (stream, peer_addr) = listener.accept().await.unwrap();
+                handle_connection_inner(
+                    runtime,
+                    stream,
+                    peer_addr,
+                    trees,
+                    sub_tx,
+                    ConnectionSlotGuard::new(connection_count),
+                    initial_ws_config.subscription_buffer_size,
+                    live_ws_rx,
+                    Some(config_applied_tx),
+                )
+                .await
+            }
+        });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
-        let updated_config = LiveWsConfig { max_events_limit: 1, ..initial_ws_config };
+        let updated_config = LiveWsConfig {
+            max_events_limit: 1,
+            ..initial_ws_config
+        };
         live_ws_tx.send(updated_config).unwrap();
         assert_eq!(config_applied_rx.recv().await.unwrap(), updated_config);
         let request = serde_json::json!({"jsonrpc":"2.0","id":23,"method":"acuity_getEvents","params":{"key":{"type":"Custom","value":{"name":"ref_index","kind":"u32","value":7}},"limit":100}});
-        client.send(Message::Text(request.to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(request.to_string().into()))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert_eq!(response["error"]["code"], -32001);
-        assert_eq!(response["error"]["data"]["reason"], "temporarily_unavailable");
+        assert_eq!(
+            response["error"]["data"]["reason"],
+            "temporarily_unavailable"
+        );
         client.close(None).await.unwrap();
         assert!(server.await.unwrap().is_ok());
     }
@@ -479,13 +663,27 @@ mod tests {
         let connection_count = Arc::new(AtomicUsize::new(1));
         let server = tokio::spawn(async move {
             let (stream, peer_addr) = listener.accept().await.unwrap();
-            handle_connection(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), DEFAULT_LIVE_WS_CONFIG.subscription_buffer_size, live_ws_rx).await
+            handle_connection(
+                runtime,
+                stream,
+                peer_addr,
+                trees,
+                sub_tx,
+                ConnectionSlotGuard::new(connection_count),
+                DEFAULT_LIVE_WS_CONFIG.subscription_buffer_size,
+                live_ws_rx,
+            )
+            .await
         });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
         let request = serde_json::json!({"jsonrpc":"1.0","id":1,"method":"acuity_indexStatus"});
-        client.send(Message::Text(request.to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(request.to_string().into()))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert_eq!(response["error"]["code"], -32600);
         client.close(None).await.unwrap();
         assert!(server.await.unwrap().is_ok());
@@ -502,13 +700,27 @@ mod tests {
         let connection_count = Arc::new(AtomicUsize::new(1));
         let server = tokio::spawn(async move {
             let (stream, peer_addr) = listener.accept().await.unwrap();
-            handle_connection(runtime, stream, peer_addr, trees, sub_tx, ConnectionSlotGuard::new(connection_count), DEFAULT_LIVE_WS_CONFIG.subscription_buffer_size, live_ws_rx).await
+            handle_connection(
+                runtime,
+                stream,
+                peer_addr,
+                trees,
+                sub_tx,
+                ConnectionSlotGuard::new(connection_count),
+                DEFAULT_LIVE_WS_CONFIG.subscription_buffer_size,
+                live_ws_rx,
+            )
+            .await
         });
         let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
         let request = serde_json::json!({"jsonrpc":"2.0","id":1,"method":"acuity_nonexistent"});
-        client.send(Message::Text(request.to_string().into())).await.unwrap();
+        client
+            .send(Message::Text(request.to_string().into()))
+            .await
+            .unwrap();
         let response = client.next().await.unwrap().unwrap();
-        let response: serde_json::Value = serde_json::from_str(response.to_text().unwrap()).unwrap();
+        let response: serde_json::Value =
+            serde_json::from_str(response.to_text().unwrap()).unwrap();
         assert_eq!(response["error"]["code"], -32601);
         client.close(None).await.unwrap();
         assert!(server.await.unwrap().is_ok());

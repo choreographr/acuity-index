@@ -178,9 +178,9 @@ pub fn start_node(
             .arg("--allow-private-ip")
             .arg("--unsafe-force-node-key-generation");
         command.arg("--network-backend").arg("libp2p");
-        command.arg("--listen-addr").arg(format!(
-            "/ip4/127.0.0.1/tcp/{p2p_port}/ws"
-        ));
+        command
+            .arg("--listen-addr")
+            .arg(format!("/ip4/127.0.0.1/tcp/{p2p_port}/ws"));
     } else {
         command.arg("--dev");
         command.arg("--instant-seal");

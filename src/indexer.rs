@@ -8,9 +8,7 @@ use serde_json::json;
 use sled::{Batch, Tree};
 use std::{collections::HashMap, sync::Arc};
 use subxt::{
-    OnlineClient, PolkadotConfig,
-    client::Block,
-    config::RpcConfigFor,
+    OnlineClient, PolkadotConfig, client::Block, config::RpcConfigFor,
     rpcs::methods::legacy::LegacyRpcMethods,
 };
 use tokio::{
@@ -125,10 +123,7 @@ impl BlockProcessingContext {
             .then_some(Key::Variant(pallet_index, variant_index));
         let keys = self.keys_for_event(pallet_name, event_name, fields);
 
-        Ok(DerivedEvent {
-            variant_key,
-            keys,
-        })
+        Ok(DerivedEvent { variant_key, keys })
     }
 }
 
@@ -575,7 +570,9 @@ impl Indexer {
         let subscription_ids: Vec<String> = {
             let subs = lock_or_recover(&self.runtime.subscriptions, "subscriptions");
             subs.iter()
-                .filter_map(|(id, entry)| matches!(entry.kind, SubscriptionKind::Status).then_some(id.clone()))
+                .filter_map(|(id, entry)| {
+                    matches!(entry.kind, SubscriptionKind::Status).then_some(id.clone())
+                })
                 .collect()
         };
 
@@ -599,7 +596,9 @@ impl Indexer {
             let subs = lock_or_recover(&self.runtime.subscriptions, "subscriptions");
             subs.iter()
                 .filter_map(|(id, entry)| match &entry.kind {
-                    SubscriptionKind::Events { key: subscribed_key } if subscribed_key == &key => Some(id.clone()),
+                    SubscriptionKind::Events {
+                        key: subscribed_key,
+                    } if subscribed_key == &key => Some(id.clone()),
                     _ => None,
                 })
                 .collect()
@@ -630,7 +629,11 @@ fn drop_subscription(runtime: &RuntimeState, subscription_id: &str) {
     update_subscription_metrics(runtime);
 }
 
-fn keep_subscription(runtime: &RuntimeState, subscription_id: &str, msg: &JsonRpcNotification) -> bool {
+fn keep_subscription(
+    runtime: &RuntimeState,
+    subscription_id: &str,
+    msg: &JsonRpcNotification,
+) -> bool {
     let tx = {
         let subs = lock_or_recover(&runtime.subscriptions, "subscriptions");
         subs.get(subscription_id).map(|entry| entry.tx.clone())
@@ -882,10 +885,13 @@ pub fn process_sub_msg(
 fn update_subscription_metrics(runtime: &RuntimeState) {
     let (status_subscriptions, event_subscriptions) = {
         let subs = lock_or_recover(&runtime.subscriptions, "subscriptions");
-        subs.values().fold((0usize, 0usize), |(status, event), entry| match entry.kind {
-            SubscriptionKind::Status => (status + 1, event),
-            SubscriptionKind::Events { .. } => (status, event + 1),
-        })
+        subs.values()
+            .fold((0usize, 0usize), |(status, event), entry| {
+                match entry.kind {
+                    SubscriptionKind::Status => (status + 1, event),
+                    SubscriptionKind::Events { .. } => (status, event + 1),
+                }
+            })
     };
     runtime
         .metrics
@@ -1549,7 +1555,10 @@ events = [
     }
 
     fn test_indexer(trees: Trees) -> Indexer {
-        test_indexer_with_runtime(trees, test_runtime(WsConfig::default().max_total_subscriptions))
+        test_indexer_with_runtime(
+            trees,
+            test_runtime(WsConfig::default().max_total_subscriptions),
+        )
     }
 
     fn u128_value(value: u128) -> Value<()> {
@@ -1916,13 +1925,7 @@ events = [
         let ctx = BlockProcessingContext::new(&spec).unwrap();
 
         let derived = ctx
-            .derive_event(
-                "Unindexed",
-                "OnlyVariant",
-                4,
-                1,
-                &Composite::Named(vec![]),
-            )
+            .derive_event("Unindexed", "OnlyVariant", 4, 1, &Composite::Named(vec![]))
             .unwrap();
 
         assert_eq!(derived.variant_key, Some(Key::Variant(4, 1)));
@@ -1983,8 +1986,10 @@ events = [
             }
             other => panic!("expected event notification, got {other:?}"),
         }
-        assert!(lock_or_recover(&indexer.runtime.subscriptions, "subscriptions")
-            .contains_key(&subscription_id));
+        assert!(
+            lock_or_recover(&indexer.runtime.subscriptions, "subscriptions")
+                .contains_key(&subscription_id)
+        );
     }
 
     #[tokio::test]
@@ -2043,8 +2048,10 @@ events = [
             }
             other => panic!("expected event notification, got {other:?}"),
         }
-        assert!(lock_or_recover(&replacement_indexer.runtime.subscriptions, "subscriptions")
-            .contains_key(&subscription_id));
+        assert!(
+            lock_or_recover(&replacement_indexer.runtime.subscriptions, "subscriptions")
+                .contains_key(&subscription_id)
+        );
     }
 
     #[test]

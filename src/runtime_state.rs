@@ -5,9 +5,7 @@ use std::sync::{
 };
 
 use subxt::{
-    OnlineClient, PolkadotConfig,
-    config::RpcConfigFor,
-    rpcs::methods::legacy::LegacyRpcMethods,
+    OnlineClient, PolkadotConfig, config::RpcConfigFor, rpcs::methods::legacy::LegacyRpcMethods,
 };
 use tokio::sync::mpsc;
 use tracing::error;

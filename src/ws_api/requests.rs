@@ -7,14 +7,16 @@ use crate::{
 
 use sled::Tree;
 use subxt::{
-    Metadata, OnlineClient, PolkadotConfig,
-    config::RpcConfigFor,
+    Metadata, OnlineClient, PolkadotConfig, config::RpcConfigFor,
     rpcs::methods::legacy::LegacyRpcMethods,
 };
 use tokio::sync::{mpsc, mpsc::Sender, oneshot};
 use tracing::error;
 
-use super::{disconnect_error, validation::{clamp_events_limit, validate_key}};
+use super::{
+    disconnect_error,
+    validation::{clamp_events_limit, validate_key},
+};
 
 pub(crate) fn enqueue_subscription_message(
     sub_tx: &Sender<SubscriptionMessage>,
@@ -85,11 +87,7 @@ pub(crate) async fn build_get_events_result(
 ) -> Result<GetEventsResult, IndexError> {
     let effective_limit = clamp_events_limit(limit, max_events_limit);
     // Fetch limit + 1 to determine hasMore
-    let mut event_refs = key.get_events(
-        trees,
-        before.as_ref(),
-        effective_limit + 1,
-    )?;
+    let mut event_refs = key.get_events(trees, before.as_ref(), effective_limit + 1)?;
     let has_more = event_refs.len() > effective_limit;
     if has_more {
         event_refs.truncate(effective_limit);
@@ -154,7 +152,10 @@ pub(crate) fn process_local_method(
     match method {
         "acuity_indexStatus" => {
             let result = build_index_status_result(&trees.span);
-            Some(Ok(jsonrpc_success(id, serde_json::to_value(result).unwrap())))
+            Some(Ok(jsonrpc_success(
+                id,
+                serde_json::to_value(result).unwrap(),
+            )))
         }
         "acuity_subscribeStatus" => {
             let subscription_id = generate_subscription_id();
@@ -173,7 +174,13 @@ pub(crate) fn process_local_method(
         "acuity_unsubscribeStatus" => {
             let params = match serde_json::from_value::<UnsubscribeParams>(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_CURSOR,
+                    )));
+                }
             };
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
@@ -190,7 +197,13 @@ pub(crate) fn process_local_method(
         "acuity_getEvents" => {
             let params: GetEventsParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_KEY))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_KEY,
+                    )));
+                }
             };
             if let Err(err) = validate_key(&params.key) {
                 return Some(Ok(jsonrpc_invalid_params(id, err, REASON_INVALID_KEY)));
@@ -200,7 +213,13 @@ pub(crate) fn process_local_method(
         "acuity_subscribeEvents" => {
             let params: SubscribeEventsParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_KEY))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_KEY,
+                    )));
+                }
             };
             if let Err(err) = validate_key(&params.key) {
                 return Some(Ok(jsonrpc_invalid_params(id, err, REASON_INVALID_KEY)));
@@ -222,7 +241,13 @@ pub(crate) fn process_local_method(
         "acuity_unsubscribeEvents" => {
             let params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_CURSOR,
+                    )));
+                }
             };
             if let Err(err) = enqueue_subscription_message(
                 sub_tx,
@@ -271,7 +296,13 @@ async fn process_subscription_method(
         "acuity_unsubscribeStatus" => {
             let params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_CURSOR,
+                    )));
+                }
             };
             let (response_tx, response_rx) = oneshot::channel();
             if let Err(err) = enqueue_subscription_message(
@@ -294,7 +325,13 @@ async fn process_subscription_method(
         "acuity_subscribeEvents" => {
             let params: SubscribeEventsParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_KEY))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_KEY,
+                    )));
+                }
             };
             if let Err(err) = validate_key(&params.key) {
                 return Some(Ok(jsonrpc_invalid_params(id, err, REASON_INVALID_KEY)));
@@ -324,7 +361,13 @@ async fn process_subscription_method(
         "acuity_unsubscribeEvents" => {
             let params: UnsubscribeParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Some(Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_CURSOR))),
+                Err(err) => {
+                    return Some(Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_CURSOR,
+                    )));
+                }
             };
             let (response_tx, response_rx) = oneshot::channel();
             if let Err(err) = enqueue_subscription_message(
@@ -361,12 +404,15 @@ pub(crate) async fn process_msg(
     let params = &request.params;
 
     // Try subscription methods first (need oneshot channels)
-    if let Some(response) = process_subscription_method(id, method, params, sub_tx, sub_response_tx).await {
+    if let Some(response) =
+        process_subscription_method(id, method, params, sub_tx, sub_response_tx).await
+    {
         return response;
     }
 
     // Try local methods (no RPC needed)
-    if let Some(response) = process_local_method(trees, id, method, params, sub_tx, sub_response_tx) {
+    if let Some(response) = process_local_method(trees, id, method, params, sub_tx, sub_response_tx)
+    {
         return response;
     }
 
@@ -382,12 +428,19 @@ pub(crate) async fn process_msg(
     };
 
     let result = match method {
-        "acuity_getEventMetadata" => build_get_event_metadata_result(&rpc).await
+        "acuity_getEventMetadata" => build_get_event_metadata_result(&rpc)
+            .await
             .map(|r| jsonrpc_success(id, serde_json::to_value(r).unwrap())),
         "acuity_getEvents" => {
             let params: GetEventsParams = match serde_json::from_value(params.clone()) {
                 Ok(p) => p,
-                Err(err) => return Ok(jsonrpc_invalid_params(id, err.to_string(), REASON_INVALID_KEY)),
+                Err(err) => {
+                    return Ok(jsonrpc_invalid_params(
+                        id,
+                        err.to_string(),
+                        REASON_INVALID_KEY,
+                    ));
+                }
             };
             build_get_events_result(
                 runtime,
@@ -424,9 +477,7 @@ mod tests {
     use super::*;
     use crate::errors::IndexError;
     use crate::protocol::get_events_index;
-    use crate::ws_api::tests_support::{
-        DEFAULT_WS_CONFIG, disconnected_runtime, temp_trees,
-    };
+    use crate::ws_api::tests_support::{DEFAULT_WS_CONFIG, disconnected_runtime, temp_trees};
     use tokio::sync::mpsc;
     use zerocopy::IntoBytes;
 
@@ -444,7 +495,10 @@ mod tests {
             start: 100u32.into(),
             version: 0u16.into(),
         };
-        trees.span.insert(200u32.to_be_bytes(), sv.as_bytes()).unwrap();
+        trees
+            .span
+            .insert(200u32.to_be_bytes(), sv.as_bytes())
+            .unwrap();
 
         let result = build_index_status_result(&trees.span);
         assert_eq!(result.spans.len(), 1);
@@ -556,8 +610,14 @@ mod tests {
         assert_eq!(
             events,
             vec![
-                EventRef { block_number: 20, event_index: 1 },
-                EventRef { block_number: 10, event_index: 0 }
+                EventRef {
+                    block_number: 20,
+                    event_index: 1
+                },
+                EventRef {
+                    block_number: 10,
+                    event_index: 0
+                }
             ]
         );
     }
@@ -574,10 +634,19 @@ mod tests {
         }
 
         let prefix = key.index_prefix().unwrap().unwrap();
-        let before = EventRef { block_number: 4, event_index: 3 };
+        let before = EventRef {
+            block_number: 4,
+            event_index: 3,
+        };
         let events = get_events_index(&trees.index, &prefix, Some(&before), 1);
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0], EventRef { block_number: 3, event_index: 2 });
+        assert_eq!(
+            events[0],
+            EventRef {
+                block_number: 3,
+                event_index: 2
+            }
+        );
 
         let events = get_events_index(&trees.index, &prefix, None, 1000);
         assert_eq!(events.len(), 5);
@@ -585,7 +654,12 @@ mod tests {
 
     #[test]
     fn jsonrpc_error_serializes_correctly() {
-        let response = jsonrpc_error(9, INVALID_PARAMS, "missing field `id`", Some(REASON_INVALID_KEY));
+        let response = jsonrpc_error(
+            9,
+            INVALID_PARAMS,
+            "missing field `id`",
+            Some(REASON_INVALID_KEY),
+        );
         let json = serde_json::to_string(&response).unwrap();
         assert!(json.contains("\"jsonrpc\":\"2.0\""));
         assert!(json.contains("\"code\":-32602"));
@@ -594,7 +668,9 @@ mod tests {
 
     #[test]
     fn jsonrpc_success_serializes_correctly() {
-        let result = IndexStatusResult { spans: vec![Span { start: 1, end: 100 }] };
+        let result = IndexStatusResult {
+            spans: vec![Span { start: 1, end: 100 }],
+        };
         let response = jsonrpc_success(1, serde_json::to_value(result).unwrap());
         let json = serde_json::to_string(&response).unwrap();
         assert!(json.contains("\"jsonrpc\":\"2.0\""));
@@ -623,7 +699,16 @@ mod tests {
             method: "acuity_getEventMetadata".into(),
             params: serde_json::Value::Null,
         };
-        let response = process_msg(runtime.as_ref(), &trees, request, &sub_tx, &response_tx, DEFAULT_WS_CONFIG.max_events_limit).await.unwrap();
+        let response = process_msg(
+            runtime.as_ref(),
+            &trees,
+            request,
+            &sub_tx,
+            &response_tx,
+            DEFAULT_WS_CONFIG.max_events_limit,
+        )
+        .await
+        .unwrap();
         match &response {
             JsonRpcResponse::Error(err) => {
                 assert_eq!(err.error.code, UPSTREAM_UNAVAILABLE);
@@ -638,7 +723,16 @@ mod tests {
         let trees = temp_trees();
         let (sub_tx, _) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
-        let response = process_local_method(&trees, 1, "acuity_indexStatus", &serde_json::Value::Null, &sub_tx, &response_tx).unwrap().unwrap();
+        let response = process_local_method(
+            &trees,
+            1,
+            "acuity_indexStatus",
+            &serde_json::Value::Null,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap()
+        .unwrap();
         match response {
             JsonRpcResponse::Success(success) => {
                 assert_eq!(success.id, 1);
@@ -654,9 +748,26 @@ mod tests {
         let trees = temp_trees();
         let (sub_tx, _) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
-        let key = Key::Custom(CustomKey { name: "x".repeat(crate::ws_api::validation::MAX_CUSTOM_KEY_NAME_BYTES + 1), value: CustomValue::U32(7) });
-        let params = serde_json::to_value(GetEventsParams { key, limit: 100, before: None }).unwrap();
-        let response = process_local_method(&trees, 10, "acuity_getEvents", &params, &sub_tx, &response_tx).unwrap().unwrap();
+        let key = Key::Custom(CustomKey {
+            name: "x".repeat(crate::ws_api::validation::MAX_CUSTOM_KEY_NAME_BYTES + 1),
+            value: CustomValue::U32(7),
+        });
+        let params = serde_json::to_value(GetEventsParams {
+            key,
+            limit: 100,
+            before: None,
+        })
+        .unwrap();
+        let response = process_local_method(
+            &trees,
+            10,
+            "acuity_getEvents",
+            &params,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap()
+        .unwrap();
         match response {
             JsonRpcResponse::Error(err) => {
                 assert_eq!(err.error.code, INVALID_PARAMS);
@@ -670,9 +781,23 @@ mod tests {
         let trees = temp_trees();
         let (sub_tx, _) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
-        let key = Key::Custom(CustomKey { name: "slug".into(), value: CustomValue::String("x".repeat(crate::ws_api::validation::MAX_CUSTOM_STRING_VALUE_BYTES + 1)) });
+        let key = Key::Custom(CustomKey {
+            name: "slug".into(),
+            value: CustomValue::String(
+                "x".repeat(crate::ws_api::validation::MAX_CUSTOM_STRING_VALUE_BYTES + 1),
+            ),
+        });
         let params = serde_json::to_value(SubscribeEventsParams { key }).unwrap();
-        let response = process_local_method(&trees, 11, "acuity_subscribeEvents", &params, &sub_tx, &response_tx).unwrap().unwrap();
+        let response = process_local_method(
+            &trees,
+            11,
+            "acuity_subscribeEvents",
+            &params,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap()
+        .unwrap();
         match response {
             JsonRpcResponse::Error(err) => {
                 assert_eq!(err.error.code, INVALID_PARAMS);
@@ -686,9 +811,30 @@ mod tests {
         let trees = temp_trees();
         let (sub_tx, _) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
-        let key = Key::Custom(CustomKey { name: "too_many".into(), value: CustomValue::Composite((0..=crate::ws_api::validation::MAX_COMPOSITE_ELEMENTS).map(|_| CustomValue::U32(1)).collect()) });
-        let params = serde_json::to_value(GetEventsParams { key, limit: 100, before: None }).unwrap();
-        let response = process_local_method(&trees, 12, "acuity_getEvents", &params, &sub_tx, &response_tx).unwrap().unwrap();
+        let key = Key::Custom(CustomKey {
+            name: "too_many".into(),
+            value: CustomValue::Composite(
+                (0..=crate::ws_api::validation::MAX_COMPOSITE_ELEMENTS)
+                    .map(|_| CustomValue::U32(1))
+                    .collect(),
+            ),
+        });
+        let params = serde_json::to_value(GetEventsParams {
+            key,
+            limit: 100,
+            before: None,
+        })
+        .unwrap();
+        let response = process_local_method(
+            &trees,
+            12,
+            "acuity_getEvents",
+            &params,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap()
+        .unwrap();
         match response {
             JsonRpcResponse::Error(err) => {
                 assert_eq!(err.error.code, INVALID_PARAMS);
@@ -706,9 +852,26 @@ mod tests {
         for _ in 0..=crate::ws_api::validation::MAX_COMPOSITE_DEPTH {
             value = CustomValue::Composite(vec![value]);
         }
-        let key = Key::Custom(CustomKey { name: "deep".into(), value });
-        let params = serde_json::to_value(GetEventsParams { key, limit: 100, before: None }).unwrap();
-        let response = process_local_method(&trees, 13, "acuity_getEvents", &params, &sub_tx, &response_tx).unwrap().unwrap();
+        let key = Key::Custom(CustomKey {
+            name: "deep".into(),
+            value,
+        });
+        let params = serde_json::to_value(GetEventsParams {
+            key,
+            limit: 100,
+            before: None,
+        })
+        .unwrap();
+        let response = process_local_method(
+            &trees,
+            13,
+            "acuity_getEvents",
+            &params,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap()
+        .unwrap();
         match response {
             JsonRpcResponse::Error(err) => {
                 assert_eq!(err.error.code, INVALID_PARAMS);
@@ -723,9 +886,30 @@ mod tests {
         let (sub_tx, _) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
         let string_len = 252usize;
-        let key = Key::Custom(CustomKey { name: "too_big".into(), value: CustomValue::Composite((0..crate::ws_api::validation::MAX_COMPOSITE_ELEMENTS).map(|_| CustomValue::String("x".repeat(string_len))).collect()) });
-        let params = serde_json::to_value(GetEventsParams { key, limit: 100, before: None }).unwrap();
-        let response = process_local_method(&trees, 14, "acuity_getEvents", &params, &sub_tx, &response_tx).unwrap().unwrap();
+        let key = Key::Custom(CustomKey {
+            name: "too_big".into(),
+            value: CustomValue::Composite(
+                (0..crate::ws_api::validation::MAX_COMPOSITE_ELEMENTS)
+                    .map(|_| CustomValue::String("x".repeat(string_len)))
+                    .collect(),
+            ),
+        });
+        let params = serde_json::to_value(GetEventsParams {
+            key,
+            limit: 100,
+            before: None,
+        })
+        .unwrap();
+        let response = process_local_method(
+            &trees,
+            14,
+            "acuity_getEvents",
+            &params,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap()
+        .unwrap();
         match response {
             JsonRpcResponse::Error(err) => {
                 assert_eq!(err.error.code, INVALID_PARAMS);
@@ -739,8 +923,24 @@ mod tests {
         let trees = temp_trees();
         let (sub_tx, _sub_rx) = mpsc::channel(1);
         let (response_tx, _) = mpsc::channel(1);
-        sub_tx.try_send(SubscriptionMessage::SubscribeStatus { subscription_id: "sub_full".into(), tx: response_tx.clone(), response_tx: None }).unwrap();
-        let result = process_local_method(&trees, 9, "acuity_subscribeStatus", &serde_json::Value::Null, &sub_tx, &response_tx).unwrap();
-        assert!(matches!(result, Err(IndexError::Io(err)) if err.kind() == std::io::ErrorKind::ConnectionAborted));
+        sub_tx
+            .try_send(SubscriptionMessage::SubscribeStatus {
+                subscription_id: "sub_full".into(),
+                tx: response_tx.clone(),
+                response_tx: None,
+            })
+            .unwrap();
+        let result = process_local_method(
+            &trees,
+            9,
+            "acuity_subscribeStatus",
+            &serde_json::Value::Null,
+            &sub_tx,
+            &response_tx,
+        )
+        .unwrap();
+        assert!(
+            matches!(result, Err(IndexError::Io(err)) if err.kind() == std::io::ErrorKind::ConnectionAborted)
+        );
     }
 }

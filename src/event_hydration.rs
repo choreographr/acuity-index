@@ -70,7 +70,11 @@ pub(crate) async fn hydrate_event_refs(
     let mut decoded_by_ref = AHashMap::<(u32, u32), DecodedEvent>::new();
     for block_number in requested_by_block.keys().copied() {
         let fetched = fetch_block_events(api, rpc, block_number).await?;
-        decode_requested_block_events(&fetched, requested_by_block.get(&block_number).unwrap(), &mut decoded_by_ref)?;
+        decode_requested_block_events(
+            &fetched,
+            requested_by_block.get(&block_number).unwrap(),
+            &mut decoded_by_ref,
+        )?;
     }
 
     let mut decoded_events = Vec::with_capacity(event_refs.len());
@@ -169,7 +173,10 @@ async fn fetch_block_timestamp(
     block_number: u32,
 ) -> Result<u64, IndexError> {
     let storage_key = timestamp_now_storage_key();
-    let Some(storage_value) = rpc.state_get_storage(&storage_key, Some(block_hash)).await? else {
+    let Some(storage_value) = rpc
+        .state_get_storage(&storage_key, Some(block_hash))
+        .await?
+    else {
         return Ok(0);
     };
 
@@ -204,8 +211,12 @@ fn decode_requested_block_events(
             continue;
         }
 
-        let decoded_event =
-            decode_event_details(fetched.block_number, fetched.spec_version, fetched.timestamp, &event)?;
+        let decoded_event = decode_event_details(
+            fetched.block_number,
+            fetched.spec_version,
+            fetched.timestamp,
+            &event,
+        )?;
         decoded_by_ref.insert((fetched.block_number, event_index), decoded_event);
     }
 
@@ -298,7 +309,10 @@ mod tests {
 
     #[test]
     fn decode_timestamp_storage_value_reads_scale_u64() {
-        assert_eq!(decode_timestamp_storage_value(&1234u64.to_le_bytes()), Some(1234));
+        assert_eq!(
+            decode_timestamp_storage_value(&1234u64.to_le_bytes()),
+            Some(1234)
+        );
     }
 
     #[test]

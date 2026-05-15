@@ -334,7 +334,9 @@ mod shared_tests {
 
     #[test]
     fn request_status() {
-        let msg: JsonRpcRequest = serde_json::from_str(r#"{"jsonrpc":"2.0","id":1,"method":"acuity_indexStatus"}"#).unwrap();
+        let msg: JsonRpcRequest =
+            serde_json::from_str(r#"{"jsonrpc":"2.0","id":1,"method":"acuity_indexStatus"}"#)
+                .unwrap();
         assert_eq!(msg.id, 1);
         assert_eq!(msg.method, "acuity_indexStatus");
     }
@@ -342,7 +344,8 @@ mod shared_tests {
     #[test]
     fn request_subscribe_status() {
         let msg: JsonRpcRequest =
-            serde_json::from_str(r#"{"jsonrpc":"2.0","id":2,"method":"acuity_subscribeStatus"}"#).unwrap();
+            serde_json::from_str(r#"{"jsonrpc":"2.0","id":2,"method":"acuity_subscribeStatus"}"#)
+                .unwrap();
         assert_eq!(msg.id, 2);
         assert_eq!(msg.method, "acuity_subscribeStatus");
     }
@@ -355,7 +358,10 @@ mod shared_tests {
         assert_eq!(msg.method, "acuity_getEvents");
         let params: GetEventsParams = serde_json::from_value(msg.params).unwrap();
         match params.key {
-            Key::Custom(CustomKey { name, value: CustomValue::U32(id) }) => {
+            Key::Custom(CustomKey {
+                name,
+                value: CustomValue::U32(id),
+            }) => {
                 assert_eq!(name, "para_id");
                 assert_eq!(id, 2000);
             }
@@ -374,7 +380,10 @@ mod shared_tests {
         let msg: JsonRpcRequest = serde_json::from_str(&json).unwrap();
         let params: GetEventsParams = serde_json::from_value(msg.params).unwrap();
         match params.key {
-            Key::Custom(CustomKey { name, value: CustomValue::Composite(values) }) => {
+            Key::Custom(CustomKey {
+                name,
+                value: CustomValue::Composite(values),
+            }) => {
                 assert_eq!(name, "item_revision");
                 assert_eq!(
                     values,
@@ -398,7 +407,10 @@ mod shared_tests {
         assert_eq!(msg.id, 4);
         let params: GetEventsParams = serde_json::from_value(msg.params).unwrap();
         match params.key {
-            Key::Custom(CustomKey { name, value: CustomValue::Bytes32(b) }) => {
+            Key::Custom(CustomKey {
+                name,
+                value: CustomValue::Bytes32(b),
+            }) => {
                 assert_eq!(name, "account_id");
                 assert_eq!(b.0, [0xAA; 32]);
             }
@@ -516,7 +528,12 @@ mod shared_tests {
 
     #[test]
     fn response_error_serializes_with_jsonrpc_envelope() {
-        let msg = jsonrpc_error_with_id(None, INVALID_PARAMS, "missing field `id`", Some(REASON_INVALID_KEY));
+        let msg = jsonrpc_error_with_id(
+            None,
+            INVALID_PARAMS,
+            "missing field `id`",
+            Some(REASON_INVALID_KEY),
+        );
 
         let json = serde_json::to_string(&msg).unwrap();
         assert!(json.contains("\"jsonrpc\":\"2.0\""));

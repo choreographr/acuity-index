@@ -634,7 +634,12 @@ pub fn jsonrpc_error_with_id(
     })
 }
 
-pub fn jsonrpc_error(id: u64, code: i32, message: impl Into<String>, reason: Option<&str>) -> JsonRpcResponse {
+pub fn jsonrpc_error(
+    id: u64,
+    code: i32,
+    message: impl Into<String>,
+    reason: Option<&str>,
+) -> JsonRpcResponse {
     jsonrpc_error_with_id(Some(id), code, message, reason)
 }
 
@@ -647,10 +652,19 @@ pub fn jsonrpc_invalid_request(message: impl Into<String>) -> JsonRpcResponse {
 }
 
 pub fn jsonrpc_method_not_found(id: u64, method: &str) -> JsonRpcResponse {
-    jsonrpc_error(id, METHOD_NOT_FOUND, format!("method not found: {method}"), None)
+    jsonrpc_error(
+        id,
+        METHOD_NOT_FOUND,
+        format!("method not found: {method}"),
+        None,
+    )
 }
 
-pub fn jsonrpc_invalid_params(id: u64, message: impl Into<String>, reason: &str) -> JsonRpcResponse {
+pub fn jsonrpc_invalid_params(
+    id: u64,
+    message: impl Into<String>,
+    reason: &str,
+) -> JsonRpcResponse {
     jsonrpc_error(id, INVALID_PARAMS, message, Some(reason))
 }
 
@@ -751,17 +765,9 @@ pub struct NotificationParams {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum NotificationResult {
-    Status {
-        spans: Vec<Span>,
-    },
-    Event {
-        key: Key,
-        event: DecodedEvent,
-    },
-    Terminated {
-        reason: String,
-        message: String,
-    },
+    Status { spans: Vec<Span> },
+    Event { key: Key, event: DecodedEvent },
+    Terminated { reason: String, message: String },
 }
 
 /// Subscription messages from WebSocket connections to the shared subscription dispatcher.

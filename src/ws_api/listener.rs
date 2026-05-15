@@ -1,6 +1,9 @@
 use crate::{errors::IndexError, protocol::*, runtime_state::RuntimeState};
 
-use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc::Sender, watch, watch::Receiver};
 use tokio_tungstenite::tungstenite::{
@@ -10,7 +13,10 @@ use tokio_tungstenite::tungstenite::{
 };
 use tracing::{error, info};
 
-use super::{session::{ConnectionSlotGuard, handle_connection}, validation::{MAX_WS_FRAME_SIZE_BYTES, MAX_WS_MESSAGE_SIZE_BYTES}};
+use super::{
+    session::{ConnectionSlotGuard, handle_connection},
+    validation::{MAX_WS_FRAME_SIZE_BYTES, MAX_WS_MESSAGE_SIZE_BYTES},
+};
 
 pub(crate) fn websocket_config() -> WebSocketConfig {
     let mut config = WebSocketConfig::default();
@@ -24,9 +30,7 @@ pub(crate) fn service_unavailable_response(message: &str) -> HttpResponse<Option
     *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
     response.headers_mut().insert(
         tokio_tungstenite::tungstenite::http::header::CONTENT_TYPE,
-        tokio_tungstenite::tungstenite::http::HeaderValue::from_static(
-            "text/plain; charset=utf-8",
-        ),
+        tokio_tungstenite::tungstenite::http::HeaderValue::from_static("text/plain; charset=utf-8"),
     );
     response
 }
@@ -107,7 +111,10 @@ mod tests {
     fn websocket_config_sets_explicit_message_and_frame_limits() {
         let config = websocket_config();
 
-        assert_eq!(config.max_message_size, Some(super::MAX_WS_MESSAGE_SIZE_BYTES));
+        assert_eq!(
+            config.max_message_size,
+            Some(super::MAX_WS_MESSAGE_SIZE_BYTES)
+        );
         assert_eq!(config.max_frame_size, Some(super::MAX_WS_FRAME_SIZE_BYTES));
         let _ = (DEFAULT_WS_CONFIG, DEFAULT_LIVE_WS_CONFIG);
     }

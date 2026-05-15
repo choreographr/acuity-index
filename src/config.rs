@@ -335,5 +335,4 @@ mod tests {
             "spec_change_blocks must be strictly increasing with no duplicates"
         );
     }
-
 }

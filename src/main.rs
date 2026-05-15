@@ -574,9 +574,11 @@ fn process_runtime_config_change(
     options_event_seen: bool,
 ) -> Result<(), IndexError> {
     if spec_event_seen {
-        let (toml_str, source_hash) = match load_index_spec_source(index_spec_path.to_str().ok_or_else(|| {
-            internal_error("index spec path is not valid UTF-8")
-        })?) {
+        let (toml_str, source_hash) = match load_index_spec_source(
+            index_spec_path
+                .to_str()
+                .ok_or_else(|| internal_error("index spec path is not valid UTF-8"))?,
+        ) {
             Ok(source) => source,
             Err(err) => {
                 warn!("{err}");
@@ -617,9 +619,11 @@ fn process_runtime_config_change(
         let Some(options_config_path) = options_config_path else {
             return Ok(());
         };
-        let snapshot = match build_options_snapshot(options_config_path.to_str().ok_or_else(|| {
-            internal_error("options config path is not valid UTF-8")
-        })?) {
+        let snapshot = match build_options_snapshot(
+            options_config_path
+                .to_str()
+                .ok_or_else(|| internal_error("options config path is not valid UTF-8"))?,
+        ) {
             Ok(snapshot) => snapshot,
             Err(err) => {
                 warn!("{err}");
@@ -674,9 +678,7 @@ async fn watch_runtime_config(
     for watch_dir in &watch_dirs {
         watcher
             .watch(watch_dir, RecursiveMode::NonRecursive)
-            .map_err(|e| {
-                internal_error(format!("failed to watch {}: {e}", watch_dir.display()))
-            })?;
+            .map_err(|e| internal_error(format!("failed to watch {}: {e}", watch_dir.display())))?;
     }
     if let Some(ready_tx) = ready_tx {
         let _ = ready_tx.send(());
@@ -746,8 +748,7 @@ async fn watch_runtime_config(
 fn validate_chain_name(chain_name: &str) -> Result<(), IndexError> {
     match Path::new(chain_name).components().next() {
         Some(Component::Normal(component))
-            if Path::new(component) == Path::new(chain_name)
-                && !component.is_empty() =>
+            if Path::new(component) == Path::new(chain_name) && !component.is_empty() =>
         {
             Ok(())
         }
@@ -849,18 +850,14 @@ fn describe_indexer_shutdown_result(
 }
 
 fn parse_db_cache_capacity(value: &str) -> Result<u64, IndexError> {
-    let bytes = Byte::parse_str(value, true).map_err(|err| {
-        internal_error(format!("invalid db cache capacity '{value}': {err}"))
-    })?;
-    bytes.as_u64_checked().ok_or_else(|| {
-        internal_error(format!("db cache capacity '{value}' does not fit in u64"))
-    })
+    let bytes = Byte::parse_str(value, true)
+        .map_err(|err| internal_error(format!("invalid db cache capacity '{value}': {err}")))?;
+    bytes
+        .as_u64_checked()
+        .ok_or_else(|| internal_error(format!("db cache capacity '{value}' does not fit in u64")))
 }
 
-fn init_db_genesis(
-    trees: &Trees,
-    genesis_hash_config: &[u8],
-) -> Result<Vec<u8>, IndexError> {
+fn init_db_genesis(trees: &Trees, genesis_hash_config: &[u8]) -> Result<Vec<u8>, IndexError> {
     match trees.root.get("genesis_hash")? {
         Some(v) => Ok(v.to_vec()),
         None => {
@@ -1404,9 +1401,7 @@ async fn run() -> Result<(), IndexError> {
                         let _ = metrics_task.await;
                     }
                     error!("Indexer task failed: {join_err}");
-                    return Err(internal_error(format!(
-                        "indexer task panicked: {join_err}"
-                    )));
+                    return Err(internal_error(format!("indexer task panicked: {join_err}")));
                 }
             },
             LoopControl::Indexer(indexer_result) => match indexer_result {
@@ -1523,9 +1518,7 @@ async fn run() -> Result<(), IndexError> {
                     }
                     let _ = watcher_task.as_mut().await;
                     error!("Indexer task failed: {join_err}");
-                    return Err(internal_error(format!(
-                        "indexer task panicked: {join_err}"
-                    )));
+                    return Err(internal_error(format!("indexer task panicked: {join_err}")));
                 }
             },
         }

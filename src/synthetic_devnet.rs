@@ -238,11 +238,7 @@ impl JsonWsClient {
         Ok(())
     }
 
-    pub async fn request(
-        &mut self,
-        method: &str,
-        params: Value,
-    ) -> Result<Value, Box<dyn Error>> {
+    pub async fn request(&mut self, method: &str, params: Value) -> Result<Value, Box<dyn Error>> {
         let request_id = self.next_request_id;
         self.next_request_id += 1;
 
@@ -283,16 +279,22 @@ pub async fn request_json_ws(url: &str, request: Value) -> Result<Value, Box<dyn
 }
 
 pub async fn fetch_status(indexer_url: &str) -> Result<Value, Box<dyn Error>> {
-    request_json_ws(indexer_url, json!({"jsonrpc": "2.0", "id": 1, "method": "acuity_indexStatus"})).await
+    request_json_ws(
+        indexer_url,
+        json!({"jsonrpc": "2.0", "id": 1, "method": "acuity_indexStatus"}),
+    )
+    .await
 }
 
 pub fn spans_cover_tip(status_response: &Value, expected_tip: u32) -> bool {
-    status_response["result"]["spans"].as_array().is_some_and(|spans| {
-        spans.iter().any(|span| {
-            span["start"].as_u64().unwrap_or(u64::MAX) <= 1
-                && span["end"].as_u64().unwrap_or(0) >= u64::from(expected_tip)
+    status_response["result"]["spans"]
+        .as_array()
+        .is_some_and(|spans| {
+            spans.iter().any(|span| {
+                span["start"].as_u64().unwrap_or(u64::MAX) <= 1
+                    && span["end"].as_u64().unwrap_or(0) >= u64::from(expected_tip)
+            })
         })
-    })
 }
 
 pub async fn wait_for_indexed_tip(

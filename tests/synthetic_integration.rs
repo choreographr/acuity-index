@@ -2,8 +2,7 @@ mod common;
 
 use acuity_index::synthetic_devnet::{
     QueryExpectation, decoded_event_names, events_len, fetch_genesis_hash, fetch_status,
-    get_events, key_bytes32, key_u32, pick_unused_port,
-    spans_cover_tip, synthetic_digest,
+    get_events, key_bytes32, key_u32, pick_unused_port, spans_cover_tip, synthetic_digest,
     validate_query_expectation, wait_for_indexed_tip, wait_for_node,
 };
 use serde_json::{Value, json};
@@ -15,7 +14,10 @@ use std::{
     io,
     time::{Duration, Instant},
 };
-use subxt::{OnlineClient, PolkadotConfig, config::substrate::SubstrateHeader, ext::codec::Encode, utils::H256 as SubxtH256};
+use subxt::{
+    OnlineClient, PolkadotConfig, config::substrate::SubstrateHeader, ext::codec::Encode,
+    utils::H256 as SubxtH256,
+};
 
 use common::{
     ConfigOverrides, IndexerOptions, SyntheticStack, WsClient, build_chain_spec,
@@ -66,11 +68,18 @@ fn response_decoded_event(
 fn response_block_proof(response: &Value, block_number: u64) -> Result<&Value, Box<dyn Error>> {
     response["result"]["proofs"]["items"]
         .as_array()
-        .ok_or_else(|| io::Error::other(format!("missing proofs items array in response: {response}")))?
+        .ok_or_else(|| {
+            io::Error::other(format!(
+                "missing proofs items array in response: {response}"
+            ))
+        })?
         .iter()
         .find(|proof| proof["blockNumber"].as_u64() == Some(block_number))
         .ok_or_else(|| {
-            io::Error::other(format!("missing proof for block {block_number} in response: {response}")).into()
+            io::Error::other(format!(
+                "missing proof for block {block_number} in response: {response}"
+            ))
+            .into()
         })
 }
 
@@ -132,10 +141,20 @@ async fn verify_response_event_proof(
             Ok(_) => None,
             Err(err) => Some(Err(err)),
         })
-        .ok_or_else(|| io::Error::other(format!("missing event #{block_number}:{event_index} in proven System.Events")))??;
+        .ok_or_else(|| {
+            io::Error::other(format!(
+                "missing event #{block_number}:{event_index} in proven System.Events"
+            ))
+        })??;
     let decoded = response_decoded_event(response, block_number, event_index)?;
-    assert_eq!(decoded["event"]["palletName"], Value::from(event.pallet_name()));
-    assert_eq!(decoded["event"]["eventName"], Value::from(event.event_name()));
+    assert_eq!(
+        decoded["event"]["palletName"],
+        Value::from(event.pallet_name())
+    );
+    assert_eq!(
+        decoded["event"]["eventName"],
+        Value::from(event.event_name())
+    );
     assert_eq!(decoded["event"]["eventIndex"], Value::from(event_index));
     Ok(())
 }
@@ -229,8 +248,7 @@ async fn wait_for_get_events_temporarily_unavailable(
     loop {
         let response = get_events(indexer_url, key.clone(), 10).await?;
 
-        if response.get("error").is_some() && response["error"]["code"] == -32001
-        {
+        if response.get("error").is_some() && response["error"]["code"] == -32001 {
             return Ok(());
         }
 
@@ -552,7 +570,9 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
 
     let mut status_client = WsClient::connect(&stack.indexer_url).await?;
     let status_subscribed = status_client
-        .request(json!({"jsonrpc": "2.0", "id": 10, "method": "acuity_subscribeStatus", "params": {}}))
+        .request(
+            json!({"jsonrpc": "2.0", "id": 10, "method": "acuity_subscribeStatus", "params": {}}),
+        )
         .await?;
     assert!(status_subscribed["result"].is_string());
     let status_subscription = status_subscribed["result"].as_str().unwrap().to_string();
@@ -624,7 +644,8 @@ async fn subscriptions_deliver_status_and_event_notifications() -> Result<(), Bo
 
 #[tokio::test]
 #[ignore = "requires polkadot-omni-node and a release runtime build"]
-async fn live_event_subscription_notifications_include_decoded_event() -> Result<(), Box<dyn Error>> {
+async fn live_event_subscription_notifications_include_decoded_event() -> Result<(), Box<dyn Error>>
+{
     let stack =
         SyntheticStack::start(ConfigOverrides::default(), IndexerOptions::default()).await?;
 
@@ -697,9 +718,10 @@ async fn live_event_subscription_notifications_include_decoded_event() -> Result
 
 #[tokio::test]
 #[ignore = "requires polkadot-omni-node, a release runtime build, and light-client bootnode support"]
-async fn get_events_with_proofs_reports_unavailable_without_finalized_indexing(
-) -> Result<(), Box<dyn Error>> {
-    let stack = SyntheticStack::start(ConfigOverrides::default(), IndexerOptions::default()).await?;
+async fn get_events_with_proofs_reports_unavailable_without_finalized_indexing()
+-> Result<(), Box<dyn Error>> {
+    let stack =
+        SyntheticStack::start(ConfigOverrides::default(), IndexerOptions::default()).await?;
     let temp = tempfile::tempdir()?;
     let manifest_path = temp.path().join("proofs-unavailable.json");
 
@@ -713,7 +735,10 @@ async fn get_events_with_proofs_reports_unavailable_without_finalized_indexing(
 
     let response = get_events(&stack.indexer_url, key_u32("batch_id", 9200), 10).await?;
     assert_eq!(events_len(&response), 3);
-    assert_eq!(response["result"]["proofs"]["available"], Value::Bool(false));
+    assert_eq!(
+        response["result"]["proofs"]["available"],
+        Value::Bool(false)
+    );
     assert_eq!(
         response["result"]["proofs"]["reason"],
         Value::from("finalized_proofs_unavailable")
@@ -724,8 +749,8 @@ async fn get_events_with_proofs_reports_unavailable_without_finalized_indexing(
 
 #[tokio::test]
 #[ignore = "requires polkadot-omni-node, a release runtime build, and embedded light-client networking"]
-async fn finalized_event_proofs_verify_against_returned_header_and_storage_proof(
-) -> Result<(), Box<dyn Error>> {
+async fn finalized_event_proofs_verify_against_returned_header_and_storage_proof()
+-> Result<(), Box<dyn Error>> {
     let stack = SyntheticStack::start(
         ConfigOverrides::default(),
         IndexerOptions {
@@ -961,7 +986,9 @@ async fn limits_invalid_requests_and_idle_timeouts_are_enforced() -> Result<(), 
 
     let mut first_subscriber = WsClient::connect(&stack.indexer_url).await?;
     let first_subscription = first_subscriber
-        .request(json!({"jsonrpc": "2.0", "id": 32, "method": "acuity_subscribeStatus", "params": {}}))
+        .request(
+            json!({"jsonrpc": "2.0", "id": 32, "method": "acuity_subscribeStatus", "params": {}}),
+        )
         .await?;
     assert!(first_subscription["result"].is_string());
 
@@ -984,7 +1011,9 @@ async fn limits_invalid_requests_and_idle_timeouts_are_enforced() -> Result<(), 
     tokio::time::sleep(Duration::from_secs(2)).await;
     assert!(
         idle_client
-            .request(json!({"jsonrpc": "2.0", "id": 34, "method": "acuity_indexStatus", "params": {}}))
+            .request(
+                json!({"jsonrpc": "2.0", "id": 34, "method": "acuity_indexStatus", "params": {}})
+            )
             .await
             .is_err()
     );
@@ -1045,7 +1074,10 @@ async fn indexer_restart_and_rpc_reconnect_preserve_queryability() -> Result<(),
         response_events(&query_after_reconnect)?,
         response_events(&baseline)?
     );
-    assert_eq!(decoded_event_names(&query_after_reconnect), decoded_event_names(&baseline));
+    assert_eq!(
+        decoded_event_names(&query_after_reconnect),
+        decoded_event_names(&baseline)
+    );
     Ok(())
 }
 
