@@ -9,7 +9,7 @@ repository = "https://github.com/acuity-network/acuity-index"
 license = "Apache-2.0"
 
 [package.metadata.release]
-allow-branch = ["main"]
+allow-branch = ["master"]
 pre-release-commit-message = "chore(release): {{version}}"
 tag-name = "v{{version}}"
 tag-message = "Release {{version}}"

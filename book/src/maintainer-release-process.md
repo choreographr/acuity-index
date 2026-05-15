@@ -84,7 +84,7 @@ cargo release major --execute
 
 `cargo-release` is configured to:
 
-1. require the `main` branch
+1. require the `master` branch
 2. run the release gate
 3. bump the crate version in `Cargo.toml`
 4. create a release commit with the message `chore(release): <version>`
@@ -142,7 +142,7 @@ setting used by the normal `release` profile.
 For a normal patch release:
 
 ```bash
-git switch main
+git switch master
 git pull --ff-only
 just release-checks
 just release patch
