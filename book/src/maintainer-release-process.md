@@ -134,8 +134,8 @@ inherits = "release"
 lto = "thin"
 ```
 
-That keeps distribution builds optimized while avoiding the heavier `fat` LTO
-setting used by the normal `release` profile.
+That gives `cargo-dist` the explicit profile it expects in CI while keeping
+release artifact builds aligned with the normal optimized `release` settings.
 
 ## Recommended Maintainer Flow
 
