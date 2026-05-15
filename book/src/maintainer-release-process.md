@@ -148,6 +148,19 @@ After the tag is pushed:
 - crates.io gets the new crate release from `cargo-release`
 - GitHub Releases gets binary artifacts from `cargo-dist`
 
+## Publicise The Release
+
+Once the release is published, share it in the places most likely to reach
+acuity-index users and contributors:
+
+- the Polkadot forum or another main Polkadot/Substrate developer discussion channel
+- the Polkadot Discord, Matrix, or Telegram developer channels
+- a short X/Twitter post linking to the GitHub release
+
+For larger releases, consider also posting to Hacker News (Show HN) and targeted
+Reddit communities. If the release is especially substantial, a short blog or
+book note can help with long-tail discovery and search visibility.
+
 ## Regenerating Dist CI
 
 If the dist configuration changes, regenerate the workflow with:
