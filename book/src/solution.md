@@ -29,7 +29,7 @@ adapt behavior by editing index specs instead of recompiling the binary.
 
 ### Well-Defined Query Surface
 
-Every index node exposes the same public WebSocket API for a given binary
+Every index node exposes the same public WebSockets API for a given binary
 version, making it easier for clients to switch providers.
 
 ### Verification-Friendly Responses

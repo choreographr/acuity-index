@@ -21,7 +21,7 @@ High-level module boundaries:
 - `src/main.rs`: CLI, startup, supervisor loop, long-lived tasks
 - `src/indexer.rs`: indexing pipeline and span tracking
 - `src/config.rs`: TOML schema and runtime mapping resolution
-- `src/ws_api/`: public WebSocket API
+- `src/ws_api/`: public WebSockets API
 - `src/protocol.rs`: shared protocol types and database key layout
 - `src/runtime_state.rs`: live shared runtime state
 - `src/metrics.rs`: Prometheus/OpenMetrics integration

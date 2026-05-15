@@ -1,4 +1,4 @@
-# WebSocket API
+# WebSockets API
 
 Connect to `ws://localhost:8172` by default.
 

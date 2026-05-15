@@ -4,7 +4,7 @@ This chapter summarizes the current deployment posture of the Internet-facing
 surfaces in this repository, the hardening already implemented, and the main
 remaining requirements before the indexer is exposed directly to dapp clients.
 
-It is a companion to [Architecture](./architecture.md) and [WebSocket API](./api.md),
+It is a companion to [Architecture](./architecture.md) and [WebSockets API](./api.md),
 and should reflect the current code layout under `src/main.rs`,
 `src/indexer.rs`, `src/event_hydration.rs`, `src/runtime_state.rs`,
 `src/protocol.rs`, and `src/metrics.rs`.
@@ -113,7 +113,7 @@ The following protections are implemented in the current server.
 ### Exposure segmentation
 
 - Metrics are served on a separate HTTP listener and port.
-  - This keeps the observability surface distinct from the public WebSocket API.
+  - This keeps the observability surface distinct from the public WebSockets API.
   - It does not make the metrics endpoint safe for public exposure by itself.
 
 ## Residual Risks

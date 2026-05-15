@@ -34,7 +34,7 @@ acuity-index run ./mychain.toml --url wss://mynode:443 --queue-depth 4 --port 81
 
 ## 4. Query The Service
 
-See the [WebSocket API](./api.md) for the protocol and methods.
+See the [WebSockets API](./api.md) for the protocol and methods.
 
 By default, connect to:
 

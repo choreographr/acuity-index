@@ -4,7 +4,7 @@ Acuity Index is a configurable event indexer for Substrate-based blockchains.
 It is primarily intended for dapps to query directly as an event indexer,
 although other consumers can use it too. It connects to a node over WebSocket
 RPC, decodes runtime events, stores queryable index entries in a local `sled`
-database, and exposes the indexed data through its own WebSocket API.
+database, and exposes the indexed data through its own WebSockets API.
 
 The project is intentionally config-driven:
 
@@ -19,6 +19,6 @@ The project is intentionally config-driven:
 This book serves three overlapping audiences:
 
 - operators running `acuity-index` against a live chain
-- application developers integrating with the WebSocket API
+- application developers integrating with the WebSockets API
 - contributors working on the Rust codebase and benchmarks
 
