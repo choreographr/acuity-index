@@ -3,40 +3,100 @@
 ## Main Command
 
 ```bash
-acuity-index <COMMAND>
+acuity-index [OPTIONS] <COMMAND>
 ```
+
+## Global Options
+
+These options are accepted by `acuity-index` for every command:
+
+| Option | Description |
+|---|---|
+| `-v, --verbose...` | Increase logging verbosity |
+| `-q, --quiet...` | Decrease logging verbosity |
+| `-h, --help` | Print help |
+| `-V, --version` | Print version |
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `run &lt;INDEX_SPEC&gt; [OPTIONS]` | Run the indexer for an index specification |
-| `purge-index &lt;INDEX_SPEC&gt; [OPTIONS]` | Delete the index database for an index spec |
-| `generate-index-spec &lt;INDEX_SPEC&gt; --url &lt;URL&gt; [--force|-f]` | Inspect live metadata and write a starter index specification |
+| `run` | Run the indexer for the specified chain |
+| `purge-index` | Delete the index database for the specified chain |
+| `generate-index-spec` | Generate a starter index spec TOML from live node metadata |
 
-## Run Options
+## `run`
+
+```bash
+acuity-index run [OPTIONS] <INDEX_SPEC>
+```
+
+Run the indexer for the specified chain.
+
+### Arguments
+
+| Argument | Description |
+|---|---|
+| `<INDEX_SPEC>` | Path to a hot-reloading index specification TOML file |
+
+### Options
 
 | Option | Default | Description |
 |---|---|---|
-| `--options-config &lt;PATH&gt;` | none | Path to runtime options TOML |
-| `-d, --db-path &lt;PATH&gt;` | `~/.local/share/acuity-index/<spec-name>/db` | Database directory |
-| `--db-mode &lt;MODE&gt;` | `low-space` | `low-space` or `high-throughput` |
-| `--db-cache-capacity &lt;SIZE&gt;` | `1024.00 MiB` | Maximum `sled` page cache |
-| `-u, --url &lt;URL&gt;` | index spec default | Substrate node WebSocket URL |
-| `--queue-depth &lt;N&gt;` | `1` | Concurrent block requests for backfill and head catch-up |
-| `-f, --finalized` | `false` | Index finalized blocks only |
-| `-p, --port &lt;PORT&gt;` | `8172` | Public WebSocket API port |
-| `--metrics-port &lt;PORT&gt;` | disabled | Optional OpenMetrics HTTP port |
-| `--max-connections &lt;N&gt;` | `1024` | Maximum concurrent WebSocket connections |
-| `--max-total-subscriptions &lt;N&gt;` | `65536` | Maximum subscriptions across all connections |
-| `--max-subscriptions-per-connection &lt;N&gt;` | `128` | Maximum subscriptions on one connection |
-| `--subscription-buffer-size &lt;N&gt;` | `256` | Per-connection notification buffer size |
-| `--subscription-control-buffer-size &lt;N&gt;` | `1024` | Subscription control channel buffer size |
-| `--idle-timeout-secs &lt;N&gt;` | `300` | Idle connection timeout |
-| `--max-events-limit &lt;N&gt;` | `1000` | Maximum events returned per query |
-| `-v / -q` | none | Increase or decrease log verbosity |
+| `--options-config <OPTIONS_CONFIG>` | none | Path to a hot-reloading options TOML file |
+| `-d, --db-path <DB_PATH>` | none | Database path |
+| `--db-mode <DB_MODE>` | `low-space` | Database mode: `low-space` or `high-throughput` |
+| `--db-cache-capacity <DB_CACHE_CAPACITY>` | `1024.00 MiB` | Maximum size for the system page cache |
+| `-u, --url <URL>` | none | URL of Substrate node to connect to |
+| `--queue-depth <QUEUE_DEPTH>` | `1` | Maximum number of concurrent block requests |
+| `-f, --finalized` | false | Only index finalized blocks |
+| `-p, --port <PORT>` | `8172` | WebSocket port |
+| `--metrics-port <METRICS_PORT>` | none | OpenMetrics HTTP port |
+| `--max-connections <MAX_CONNECTIONS>` | `1024` | Maximum concurrent WebSocket connections |
+| `--max-total-subscriptions <MAX_TOTAL_SUBSCRIPTIONS>` | `65536` | Maximum total subscriptions across all connections |
+| `--max-subscriptions-per-connection <MAX_SUBSCRIPTIONS_PER_CONNECTION>` | `128` | Maximum subscriptions per connection |
+| `--subscription-buffer-size <SUBSCRIPTION_BUFFER_SIZE>` | `256` | Per-connection subscription notification buffer size |
+| `--subscription-control-buffer-size <SUBSCRIPTION_CONTROL_BUFFER_SIZE>` | `1024` | Subscription control channel buffer size |
+| `--idle-timeout-secs <IDLE_TIMEOUT_SECS>` | `300` | Idle connection timeout in seconds |
+| `--max-events-limit <MAX_EVENTS_LIMIT>` | `1000` | Maximum number of events returned per query |
 
-`run` requires a positional `&lt;INDEX_SPEC&gt;` before any options.
+## `purge-index`
 
-Running with `--finalized` also enables finalized proof responses for
-`GetEvents` requests that set `includeProofs: true`.
+```bash
+acuity-index purge-index [OPTIONS] <INDEX_SPEC>
+```
+
+Delete the index database for the specified chain.
+
+### Arguments
+
+| Argument | Description |
+|---|---|
+| `<INDEX_SPEC>` | Path to an index specification TOML file |
+
+### Options
+
+| Option | Description |
+|---|---|
+| `-d, --db-path <DB_PATH>` | Database path |
+
+## `generate-index-spec`
+
+```bash
+acuity-index generate-index-spec [OPTIONS] --url <URL> <INDEX_SPEC>
+```
+
+Generate a starter index spec TOML from live node metadata.
+
+### Arguments
+
+| Argument | Description |
+|---|---|
+| `<INDEX_SPEC>` | Path to write the generated index spec TOML file |
+
+### Options
+
+| Option | Description |
+|---|---|
+| `-u, --url <URL>` | URL of Substrate node to connect to |
+| `-f, --force` | Overwrite the output file if it already exists |

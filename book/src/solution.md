@@ -42,16 +42,3 @@ material against the chain state root.
 
 The event index is the current focus, but the architecture leaves room for
 richer indexing layers in the future.
-
-## Practical Deployment Model
-
-One theoretical alternative is for every user to run a full node per chain, but
-that is rarely practical due to storage, bandwidth, and synchronization costs.
-Acuity Index is a smaller operational unit focused on searchable event access.
-
-It does not replace the chain node. Instead, it complements it:
-
-1. the node remains the source of truth
-2. Acuity Index consumes node RPC and metadata
-3. the indexer stores query-oriented secondary data locally
-4. clients query the index over WebSocket

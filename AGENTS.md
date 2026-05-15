@@ -7,8 +7,6 @@
 - [WebSocket API](./book/src/api.md)
 - [Configuration](./book/src/configuration.md)
 - [Security](./book/src/security.md)
-- [Operations](./book/src/operations.md)
-- [Synthetic devnet](./book/src/synthetic-devnet.md)
 
 ## Guidance for changes
 

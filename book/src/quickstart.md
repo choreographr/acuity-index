@@ -1,15 +1,12 @@
 # Quickstart
 
-This is the fastest path to indexing a chain.
-
 ## 1. Generate A Starter Spec
 
 ```bash
 acuity-index generate-index-spec ./mychain.toml --url wss://mynode:443
 ```
 
-This inspects live runtime metadata and writes a starter TOML file. Metadata v14
-or newer is required.
+This inspects live runtime metadata and writes a starter TOML file.
 
 ## 2. Review And Edit The Spec
 
@@ -35,13 +32,9 @@ Common overrides:
 acuity-index run ./mychain.toml --url wss://mynode:443 --queue-depth 4 --port 8172
 ```
 
-If clients need verifiable proofs in `GetEvents`, run in finalized mode:
-
-```bash
-acuity-index run ./mychain.toml --finalized
-```
-
 ## 4. Query The Service
+
+See the [WebSocket API](./api.md) for the protocol and methods.
 
 By default, connect to:
 

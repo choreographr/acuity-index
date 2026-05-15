@@ -1,4 +1,4 @@
-# Releases
+# Maintainer Release Process
 
 `acuity-index` uses a split release flow:
 

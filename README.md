@@ -19,9 +19,7 @@ Primary documentation lives in the in-repo mdBook:
 - CLI reference: [`book/src/cli.md`](./book/src/cli.md)
 - configuration: [`book/src/configuration.md`](./book/src/configuration.md)
 - WebSocket API: [`book/src/api.md`](./book/src/api.md)
-- operations: [`book/src/operations.md`](./book/src/operations.md)
 - security: [`book/src/security.md`](./book/src/security.md)
-- synthetic devnet: [`book/src/synthetic-devnet.md`](./book/src/synthetic-devnet.md)
 - contributing: [`book/src/contributing.md`](./book/src/contributing.md)
 - full table of contents: [`book/src/SUMMARY.md`](./book/src/SUMMARY.md)
 
@@ -198,7 +196,6 @@ just benchmark-indexing
 ```
 
 `polkadot-omni-node` is required for the synthetic runtime workflows.
-For more detail, see [`book/src/synthetic-devnet.md`](./book/src/synthetic-devnet.md).
 
 ## License
 

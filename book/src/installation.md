@@ -5,15 +5,15 @@
 - Rust `stable` as pinned by `rust-toolchain.toml`
 - a Substrate node with WebSocket RPC enabled
 - archival historical state on that node via `--state-pruning archive-canonical`
-- `polkadot-omni-node` if you want to use the in-repo synthetic devnet workflows
+- `polkadot-omni-node` if you want to run integrations tests or indexing benchmark
 - `just` for the documented developer command surface
 
 ## Install The Binary
 
-From this repository:
+From crates.io:
 
 ```bash
-cargo install --path .
+cargo install acuity-index
 ```
 
 For local development you can also run it directly without installing:

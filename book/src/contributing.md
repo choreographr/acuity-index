@@ -32,7 +32,7 @@ High-level module boundaries:
 ## Suggested Workflow
 
 1. run unit tests with `just test`
-2. use the synthetic devnet when your change affects observable runtime behavior
+2. use the synthetic harness when your change affects observable runtime behavior
 3. run ignored integration tests when changing indexing, API, or reconnect logic
 4. benchmark with the synthetic harness when changing throughput-sensitive code
 5. update the book when user-facing or operator-facing behavior changes
