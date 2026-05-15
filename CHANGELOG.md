@@ -6,9 +6,7 @@ starting from the initial import of the earlier `acuity-index-substrate` and
 
 It intentionally lists only major changes.
 
-## v0.9.0 (upcoming)
-
-Changes after `v0.8.0` are planned for the next release.
+## v0.9.0
 
 ### Changed
 
