@@ -1,0 +1,1912 @@
+<!DOCTYPE HTML>
+<html lang="en" class="navy sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Acuity Index Book</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "navy";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-2e66dca1.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-0beb55ae.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('navy')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Acuity Index Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/acuity-network/acuity-index" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>Acuity Index is a configurable event indexer for Substrate-based blockchains.
+It is primarily intended for dapps to query directly as an event indexer,
+although other consumers can use it too. It connects to a node over WebSocket
+RPC, decodes runtime events, stores queryable index entries in a local <code>sled</code>
+database, and exposes the indexed data through its own WebSockets API.</p>
+<p>The project is intentionally config-driven:</p>
+<ul>
+<li>chain-specific indexing rules live in TOML instead of generated Rust types</li>
+<li>event payloads are decoded generically</li>
+<li>the on-disk index is built around explicit query keys</li>
+<li>returned events can include GRANDPA proofs so light clients can verify correctness</li>
+<li>operators can update accepted index specs without restarting the public service</li>
+</ul>
+<h2 id="who-this-book-is-for"><a class="header" href="#who-this-book-is-for">Who This Book Is For</a></h2>
+<p>This book serves three overlapping audiences:</p>
+<ul>
+<li>operators running <code>acuity-index</code> against a live chain</li>
+<li>application developers integrating with the WebSockets API</li>
+<li>contributors working on the Rust codebase and benchmarks</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="problem"><a class="header" href="#problem">Problem</a></h1>
+<p>Dapps need to read and write blockchain state, consume events, and often work
+with off-chain content such as IPFS. Current state can be read on-chain or
+off-chain, but historic state and events are usually consumed off-chain.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Data</th><th>Read</th><th>Write</th><th>Modify</th></tr>
+</thead>
+<tbody>
+<tr><td>Current state</td><td>on/off-chain</td><td>on-chain</td><td>on-chain</td></tr>
+<tr><td>Historic state</td><td>off-chain</td><td>—</td><td>—</td></tr>
+<tr><td>Events</td><td>off-chain</td><td>on-chain</td><td>—</td></tr>
+<tr><td>IPFS</td><td>off-chain</td><td>off-chain</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+<p>Writing data to events is often much cheaper than writing it to state, but that
+creates a retrieval problem for dapps: the chain emits the data, while users and
+applications still need a fast, trustworthy way to search and subscribe to it.</p>
+<h2 id="why-plain-rpc-is-not-enough"><a class="header" href="#why-plain-rpc-is-not-enough">Why Plain RPC Is Not Enough</a></h2>
+<p>Typical dapps depend on centralized RPC providers. That creates several issues:</p>
+<h3 id="incorrect-or-missing-data"><a class="header" href="#incorrect-or-missing-data">Incorrect Or Missing Data</a></h3>
+<p>A dapp generally trusts the RPC provider to return complete and correct results.
+A malicious or faulty provider can omit data or return misleading answers.</p>
+<h3 id="event-query-limits"><a class="header" href="#event-query-limits">Event Query Limits</a></h3>
+<p>Substrate RPC does not provide rich event search. Other ecosystems often impose
+limits such as:</p>
+<ul>
+<li>maximum blocks scanned per query</li>
+<li>earliest scannable block</li>
+<li>maximum execution time</li>
+<li>indexing disabled on free tiers</li>
+</ul>
+<h3 id="slow-queries"><a class="header" href="#slow-queries">Slow Queries</a></h3>
+<p>Scanning logs repeatedly is slower and more resource-intensive than querying a
+purpose-built index.</p>
+<h3 id="unavailability-and-policy-risk"><a class="header" href="#unavailability-and-policy-risk">Unavailability And Policy Risk</a></h3>
+<p>Centralized providers can be unavailable due to outages, geoblocking, payment
+requirements, or policy decisions.</p>
+<h3 id="tracking-and-privacy-loss"><a class="header" href="#tracking-and-privacy-loss">Tracking And Privacy Loss</a></h3>
+<p>Providers may correlate IP addresses, identities, and query history.</p>
+<h3 id="pressure-toward-centralized-dapp-backends"><a class="header" href="#pressure-toward-centralized-dapp-backends">Pressure Toward Centralized Dapp Backends</a></h3>
+<p>Because raw RPC is a poor fit for search, teams are incentivized to build their
+own centralized indexing backend, which weakens the decentralization story.</p>
+<h3 id="more-expensive-chain-design"><a class="header" href="#more-expensive-chain-design">More Expensive Chain Design</a></h3>
+<p>If developers cannot reliably search events, they may push more data into chain
+state just to make retrieval easier, increasing fees and block-space pressure.</p>
+<h3 id="limited-extensibility"><a class="header" href="#limited-extensibility">Limited Extensibility</a></h3>
+<p>Chains and dapps may need richer indexing beyond events, including full-text,
+classification, or domain-specific search over linked off-chain data.</p>
+<p>Acuity Index exists to solve the event indexing part of this problem with a
+configurable, chain-aware, high-performance utility.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="solution"><a class="header" href="#solution">Solution</a></h1>
+<p>Acuity Index runs alongside a Substrate node and builds queryable indexes over
+runtime events. Instead of forcing every dapp to rescan chain history, the
+indexer stores event references keyed by explicit query keys such as account IDs,
+object IDs, or composite identifiers.</p>
+<h2 id="core-idea"><a class="header" href="#core-idea">Core Idea</a></h2>
+<p>At its simplest, Acuity Index maintains an index of <code>(block_number, event_index)</code>
+for each configured key. Clients can then:</p>
+<ul>
+<li>query matching events efficiently</li>
+<li>subscribe to live updates for a key</li>
+<li>optionally request decoded event payloads</li>
+<li>optionally request finalized proof material for returned blocks</li>
+</ul>
+<h2 id="why-this-helps"><a class="header" href="#why-this-helps">Why This Helps</a></h2>
+<h3 id="high-performance"><a class="header" href="#high-performance">High Performance</a></h3>
+<p>Acuity Index uses <code>sled</code> to maintain an embedded local index. That is better
+suited to repeated key-based queries than ad hoc log scanning.</p>
+<h3 id="config-driven-operation"><a class="header" href="#config-driven-operation">Config-Driven Operation</a></h3>
+<p>Per-chain indexing rules live in TOML, not generated Rust code. Operators can
+adapt behavior by editing index specs instead of recompiling the binary.</p>
+<h3 id="well-defined-query-surface"><a class="header" href="#well-defined-query-surface">Well-Defined Query Surface</a></h3>
+<p>Every index node exposes the same public WebSockets API for a given binary
+version, making it easier for clients to switch providers.</p>
+<h3 id="verification-friendly-responses"><a class="header" href="#verification-friendly-responses">Verification-Friendly Responses</a></h3>
+<p>When the indexer runs in finalized mode, <code>GetEvents</code> can include finalized block
+headers and <code>System.Events</code> storage proofs so clients can verify returned event
+material against the chain state root.</p>
+<h3 id="extensible-design"><a class="header" href="#extensible-design">Extensible Design</a></h3>
+<p>The event index is the current focus, but the architecture leaves room for
+richer indexing layers in the future.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="features"><a class="header" href="#features">Features</a></h1>
+<h2 id="user-facing-features"><a class="header" href="#user-facing-features">User-Facing Features</a></h2>
+<ul>
+<li>Config-driven indexing with support for scalar, composite, and multi-value keys</li>
+<li>Explicit pallet and event mappings in TOML</li>
+<li>Index specification checkpoints via <code>spec_change_blocks</code> for controlled reindexing</li>
+<li>Hot reload for accepted index-spec changes</li>
+<li>Concurrent backfill and live head catch-up</li>
+<li>WebSocket queries and subscriptions</li>
+<li>Event variant indexing via <code>index_variant</code></li>
+<li>Optional finalized event proofs for <code>GetEvents</code></li>
+<li>Prometheus / OpenMetrics metrics export</li>
+<li>Resume-safe persistence of indexed spans</li>
+<li>Synthetic devnet, integration tests, and end-to-end benchmarking</li>
+</ul>
+<h2 id="operational-features"><a class="header" href="#operational-features">Operational Features</a></h2>
+<ul>
+<li>chain identity protection through persisted <code>genesis_hash</code></li>
+<li>recoverable RPC reconnect loop with exponential backoff</li>
+<li>public WebSocket server stays up across accepted spec reloads and transient upstream failures</li>
+<li>configurable connection and subscription limits</li>
+<li>bounded subscription control paths and backpressure handling</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<ul>
+<li>Rust <code>stable</code> as pinned by <code>rust-toolchain.toml</code></li>
+<li>a Substrate node with WebSocket RPC enabled</li>
+<li>archival historical state on that node via <code>--state-pruning archive-canonical</code></li>
+<li><code>polkadot-omni-node</code> if you want to run integrations tests or indexing benchmark</li>
+<li><code>just</code> for the documented developer command surface</li>
+</ul>
+<h2 id="install-the-binary"><a class="header" href="#install-the-binary">Install The Binary</a></h2>
+<p>From crates.io:</p>
+<pre><code class="language-bash">cargo install acuity-index
+</code></pre>
+<p>For local development you can also run it directly without installing:</p>
+<pre><code class="language-bash">cargo run -- run ./mychain.toml
+</code></pre>
+<h2 id="build-from-source"><a class="header" href="#build-from-source">Build From Source</a></h2>
+<p>Common entry points:</p>
+<pre><code class="language-bash">just build
+just test
+just build-release
+</code></pre>
+<h2 id="install-documentation-tooling"><a class="header" href="#install-documentation-tooling">Install Documentation Tooling</a></h2>
+<p>If you want to build this book locally, install <code>mdbook</code>:</p>
+<pre><code class="language-bash">cargo install mdbook
+</code></pre>
+<p>Then use:</p>
+<pre><code class="language-bash">just book-build
+just book-serve
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
+<h2 id="1-generate-a-starter-spec"><a class="header" href="#1-generate-a-starter-spec">1. Generate A Starter Spec</a></h2>
+<pre><code class="language-bash">acuity-index generate-index-spec ./mychain.toml --url wss://mynode:443
+</code></pre>
+<p>This inspects live runtime metadata and writes a starter TOML file.</p>
+<h2 id="2-review-and-edit-the-spec"><a class="header" href="#2-review-and-edit-the-spec">2. Review And Edit The Spec</a></h2>
+<p>At minimum, verify:</p>
+<ul>
+<li><code>name</code></li>
+<li><code>genesis_hash</code></li>
+<li><code>default_url</code></li>
+<li>declared <code>[keys]</code></li>
+<li><code>[[pallets]]</code> and <code>[[pallets.events]]</code> entries you want indexed</li>
+</ul>
+<p>Remove keys you do not need and add composite keys where appropriate.</p>
+<h2 id="3-run-the-indexer"><a class="header" href="#3-run-the-indexer">3. Run The Indexer</a></h2>
+<pre><code class="language-bash">acuity-index run ./mychain.toml
+</code></pre>
+<p>Common overrides:</p>
+<pre><code class="language-bash">acuity-index run ./mychain.toml --url wss://mynode:443 --queue-depth 4 --port 8172
+</code></pre>
+<h2 id="4-query-the-service"><a class="header" href="#4-query-the-service">4. Query The Service</a></h2>
+<p>See the <a href="#websockets-api">WebSockets API</a> for the protocol and methods.</p>
+<p>By default, connect to:</p>
+<pre><code class="language-text">ws://localhost:8172
+</code></pre>
+<p>Minimal request:</p>
+<pre><code class="language-json">{"id":1,"type":"Status"}
+</code></pre>
+<h2 id="5-iterate-safely"><a class="header" href="#5-iterate-safely">5. Iterate Safely</a></h2>
+<p>When <code>run &lt;INDEX_SPEC&gt;</code> points to a file, Acuity Index watches that file for
+accepted changes. Valid changes restart only the RPC/indexer loop. The public
+WebSocket server and optional metrics listener stay up.</p>
+<p>Rejected changes do not kill the running process.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<p>Acuity Index uses two configuration layers:</p>
+<ul>
+<li>an index specification TOML that describes chain identity and indexing rules</li>
+<li>an optional runtime options TOML passed via <code>--options-config</code></li>
+</ul>
+<p>Runtime precedence is:</p>
+<pre><code class="language-text">CLI flags &gt; --options-config file &gt; built-in defaults
+</code></pre>
+<h2 id="index-specification"><a class="header" href="#index-specification">Index Specification</a></h2>
+<p>Each chain is described by an index specification passed as <code>&lt;INDEX_SPEC&gt;</code>.</p>
+<pre><code class="language-toml">name = "mychain"
+genesis_hash = "abc123..."
+default_url = "wss://my-node:443"
+index_variant = false
+spec_change_blocks = [0]
+
+[keys]
+account_id = "bytes32"
+item_id = "bytes32"
+revision_id = "u32"
+item_revision = { fields = ["bytes32", "u32"] }
+
+[[pallets]]
+name = "MyPallet"
+
+[[pallets.events]]
+name = "SomeEvent"
+
+[[pallets.events.params]]
+field = "who"
+key = "account_id"
+
+[[pallets.events.params]]
+fields = ["item_id", "revision_id"]
+key = "item_revision"
+</code></pre>
+<h2 id="important-fields"><a class="header" href="#important-fields">Important Fields</a></h2>
+<ul>
+<li><code>name</code>: logical name for the spec and default local storage path</li>
+<li><code>genesis_hash</code>: chain identity guard; a database is tied to one chain only</li>
+<li><code>default_url</code>: fallback node URL when CLI and runtime options do not override it</li>
+<li><code>index_variant</code>: whether to store pallet and variant lookups in the variant tree</li>
+<li><code>spec_change_blocks</code>: revision boundaries for historical reindex behavior</li>
+</ul>
+<p><code>spec_change_blocks</code> must:</p>
+<ul>
+<li>not be empty</li>
+<li>start with <code>0</code></li>
+<li>be strictly increasing</li>
+</ul>
+<h2 id="declared-keys"><a class="header" href="#declared-keys">Declared Keys</a></h2>
+<p>Scalar key kinds:</p>
+<ul>
+<li><code>bytes32</code></li>
+<li><code>u32</code></li>
+<li><code>u64</code></li>
+<li><code>u128</code></li>
+<li><code>string</code></li>
+<li><code>bool</code></li>
+</ul>
+<p>Composite keys are declared structurally:</p>
+<pre><code class="language-toml">[keys]
+item_revision = { fields = ["bytes32", "u32"] }
+</code></pre>
+<p>Event parameter mappings use:</p>
+<ul>
+<li><code>field = "..."</code> for scalar keys</li>
+<li><code>fields = ["...", "..."]</code> for composite keys</li>
+<li><code>multi = true</code> for one-to-many scalar extraction when the event field contains multiple values</li>
+</ul>
+<p>Composite key values are ordered and binary encoded, so field order matters.</p>
+<h2 id="runtime-options-config"><a class="header" href="#runtime-options-config">Runtime Options Config</a></h2>
+<p>Deployment-specific settings can live in a separate TOML file:</p>
+<pre><code class="language-toml">url = "wss://mynode:443"
+db_path = "/var/lib/acuity-index/mychain"
+db_mode = "low_space"
+db_cache_capacity = "1024 MiB"
+queue_depth = 4
+finalized = false
+port = 8172
+metrics_port = 9000
+max_connections = 1024
+max_total_subscriptions = 65536
+max_subscriptions_per_connection = 128
+subscription_buffer_size = 256
+subscription_control_buffer_size = 1024
+idle_timeout_secs = 300
+max_events_limit = 1000
+</code></pre>
+<p>Supported fields:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Default</th></tr>
+</thead>
+<tbody>
+<tr><td><code>url</code></td><td>string</td><td>index spec <code>default_url</code></td></tr>
+<tr><td><code>db_path</code></td><td>string</td><td><code>~/.local/share/acuity-index/&lt;chain&gt;/db</code></td></tr>
+<tr><td><code>db_mode</code></td><td>string</td><td><code>low_space</code></td></tr>
+<tr><td><code>db_cache_capacity</code></td><td>string</td><td><code>1024.00 MiB</code></td></tr>
+<tr><td><code>queue_depth</code></td><td>integer</td><td><code>1</code></td></tr>
+<tr><td><code>finalized</code></td><td>boolean</td><td><code>false</code></td></tr>
+<tr><td><code>port</code></td><td>integer</td><td><code>8172</code></td></tr>
+<tr><td><code>metrics_port</code></td><td>integer</td><td>disabled</td></tr>
+<tr><td><code>max_connections</code></td><td>integer</td><td><code>1024</code></td></tr>
+<tr><td><code>max_total_subscriptions</code></td><td>integer</td><td><code>65536</code></td></tr>
+<tr><td><code>max_subscriptions_per_connection</code></td><td>integer</td><td><code>128</code></td></tr>
+<tr><td><code>subscription_buffer_size</code></td><td>integer</td><td><code>256</code></td></tr>
+<tr><td><code>subscription_control_buffer_size</code></td><td>integer</td><td><code>1024</code></td></tr>
+<tr><td><code>idle_timeout_secs</code></td><td>integer</td><td><code>300</code></td></tr>
+<tr><td><code>max_events_limit</code></td><td>integer</td><td><code>1000</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>index_variant</code> belongs in the index spec, not the runtime options file.</p>
+<h2 id="hot-reload-notes"><a class="header" href="#hot-reload-notes">Hot Reload Notes</a></h2>
+<ul>
+<li>index-spec changes can restart the indexer when accepted</li>
+<li>changes to <code>name</code> or <code>genesis_hash</code> are rejected</li>
+<li>options-config changes can also be reloaded</li>
+<li>some WebSocket settings are applied live, while others require indexer restart according to runtime validation logic</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="cli-reference"><a class="header" href="#cli-reference">CLI Reference</a></h1>
+<h2 id="main-command"><a class="header" href="#main-command">Main Command</a></h2>
+<pre><code class="language-bash">acuity-index [OPTIONS] &lt;COMMAND&gt;
+</code></pre>
+<h2 id="global-options"><a class="header" href="#global-options">Global Options</a></h2>
+<p>These options are accepted by <code>acuity-index</code> for every command:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Option</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>-v, --verbose...</code></td><td>Increase logging verbosity</td></tr>
+<tr><td><code>-q, --quiet...</code></td><td>Decrease logging verbosity</td></tr>
+<tr><td><code>-h, --help</code></td><td>Print help</td></tr>
+<tr><td><code>-V, --version</code></td><td>Print version</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Command</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>run</code></td><td>Run the indexer for the specified chain</td></tr>
+<tr><td><code>purge-index</code></td><td>Delete the index database for the specified chain</td></tr>
+<tr><td><code>generate-index-spec</code></td><td>Generate a starter index spec TOML from live node metadata</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="run"><a class="header" href="#run"><code>run</code></a></h2>
+<pre><code class="language-bash">acuity-index run [OPTIONS] &lt;INDEX_SPEC&gt;
+</code></pre>
+<p>Run the indexer for the specified chain.</p>
+<h3 id="arguments"><a class="header" href="#arguments">Arguments</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>&lt;INDEX_SPEC&gt;</code></td><td>Path to a hot-reloading index specification TOML file</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="options"><a class="header" href="#options">Options</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--options-config &lt;OPTIONS_CONFIG&gt;</code></td><td>none</td><td>Path to a hot-reloading options TOML file</td></tr>
+<tr><td><code>-d, --db-path &lt;DB_PATH&gt;</code></td><td>none</td><td>Database path</td></tr>
+<tr><td><code>--db-mode &lt;DB_MODE&gt;</code></td><td><code>low-space</code></td><td>Database mode: <code>low-space</code> or <code>high-throughput</code></td></tr>
+<tr><td><code>--db-cache-capacity &lt;DB_CACHE_CAPACITY&gt;</code></td><td><code>1024.00 MiB</code></td><td>Maximum size for the system page cache</td></tr>
+<tr><td><code>-u, --url &lt;URL&gt;</code></td><td>none</td><td>URL of Substrate node to connect to</td></tr>
+<tr><td><code>--queue-depth &lt;QUEUE_DEPTH&gt;</code></td><td><code>1</code></td><td>Maximum number of concurrent block requests</td></tr>
+<tr><td><code>-f, --finalized</code></td><td>false</td><td>Only index finalized blocks</td></tr>
+<tr><td><code>-p, --port &lt;PORT&gt;</code></td><td><code>8172</code></td><td>WebSocket port</td></tr>
+<tr><td><code>--metrics-port &lt;METRICS_PORT&gt;</code></td><td>none</td><td>OpenMetrics HTTP port</td></tr>
+<tr><td><code>--max-connections &lt;MAX_CONNECTIONS&gt;</code></td><td><code>1024</code></td><td>Maximum concurrent WebSocket connections</td></tr>
+<tr><td><code>--max-total-subscriptions &lt;MAX_TOTAL_SUBSCRIPTIONS&gt;</code></td><td><code>65536</code></td><td>Maximum total subscriptions across all connections</td></tr>
+<tr><td><code>--max-subscriptions-per-connection &lt;MAX_SUBSCRIPTIONS_PER_CONNECTION&gt;</code></td><td><code>128</code></td><td>Maximum subscriptions per connection</td></tr>
+<tr><td><code>--subscription-buffer-size &lt;SUBSCRIPTION_BUFFER_SIZE&gt;</code></td><td><code>256</code></td><td>Per-connection subscription notification buffer size</td></tr>
+<tr><td><code>--subscription-control-buffer-size &lt;SUBSCRIPTION_CONTROL_BUFFER_SIZE&gt;</code></td><td><code>1024</code></td><td>Subscription control channel buffer size</td></tr>
+<tr><td><code>--idle-timeout-secs &lt;IDLE_TIMEOUT_SECS&gt;</code></td><td><code>300</code></td><td>Idle connection timeout in seconds</td></tr>
+<tr><td><code>--max-events-limit &lt;MAX_EVENTS_LIMIT&gt;</code></td><td><code>1000</code></td><td>Maximum number of events returned per query</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="purge-index"><a class="header" href="#purge-index"><code>purge-index</code></a></h2>
+<pre><code class="language-bash">acuity-index purge-index [OPTIONS] &lt;INDEX_SPEC&gt;
+</code></pre>
+<p>Delete the index database for the specified chain.</p>
+<h3 id="arguments-1"><a class="header" href="#arguments-1">Arguments</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>&lt;INDEX_SPEC&gt;</code></td><td>Path to an index specification TOML file</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="options-1"><a class="header" href="#options-1">Options</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Option</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>-d, --db-path &lt;DB_PATH&gt;</code></td><td>Database path</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="generate-index-spec"><a class="header" href="#generate-index-spec"><code>generate-index-spec</code></a></h2>
+<pre><code class="language-bash">acuity-index generate-index-spec [OPTIONS] --url &lt;URL&gt; &lt;INDEX_SPEC&gt;
+</code></pre>
+<p>Generate a starter index spec TOML from live node metadata.</p>
+<h3 id="arguments-2"><a class="header" href="#arguments-2">Arguments</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>&lt;INDEX_SPEC&gt;</code></td><td>Path to write the generated index spec TOML file</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="options-2"><a class="header" href="#options-2">Options</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Option</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>-u, --url &lt;URL&gt;</code></td><td>URL of Substrate node to connect to</td></tr>
+<tr><td><code>-f, --force</code></td><td>Overwrite the output file if it already exists</td></tr>
+</tbody>
+</table>
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="websockets-api"><a class="header" href="#websockets-api">WebSockets API</a></h1>
+<p>Connect to <code>ws://localhost:8172</code> by default.</p>
+<p>For Internet-facing deployment guidance and the current security review, see
+<a href="#security-and-deployment">Security And Deployment</a>.</p>
+<p>The public API is a JSON-RPC 2.0-over-WebSocket protocol with two message classes:</p>
+<ul>
+<li>request/response messages, which carry a numeric or string <code>id</code></li>
+<li>server notifications, which never carry an <code>id</code></li>
+</ul>
+<h2 id="protocol-overview"><a class="header" href="#protocol-overview">Protocol Overview</a></h2>
+<h3 id="requests"><a class="header" href="#requests">Requests</a></h3>
+<p>Every client request must conform to the JSON-RPC 2.0 specification:</p>
+<ul>
+<li><code>jsonrpc</code>: must be <code>"2.0"</code></li>
+<li><code>id</code>: unsigned integer or string chosen by the client</li>
+<li><code>method</code>: the RPC method name</li>
+<li><code>params</code>: optional method parameters</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{"jsonrpc":"2.0","id":1,"method":"acuity_indexStatus","params":{}}
+</code></pre>
+<h3 id="responses"><a class="header" href="#responses">Responses</a></h3>
+<p>Every successful request receives a JSON-RPC 2.0 response with the same <code>id</code>.</p>
+<ul>
+<li><code>jsonrpc</code>: <code>"2.0"</code></li>
+<li><code>id</code>: matches the request <code>id</code></li>
+<li><code>result</code>: the method return value</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "spans": [
+      {"start": 1, "end": 1000}
+    ]
+  }
+}
+</code></pre>
+<h3 id="error-responses"><a class="header" href="#error-responses">Error Responses</a></h3>
+<p>Failed requests receive a JSON-RPC 2.0 error response with the same <code>id</code>.</p>
+<ul>
+<li><code>jsonrpc</code>: <code>"2.0"</code></li>
+<li><code>id</code>: matches the request <code>id</code> (or <code>null</code> if the <code>id</code> could not be parsed)</li>
+<li><code>error</code>: error object with:
+<ul>
+<li><code>code</code>: integer error code</li>
+<li><code>message</code>: human-readable description</li>
+<li><code>data</code>: optional additional information</li>
+</ul>
+</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32602,
+    "message": "Invalid params",
+    "data": {
+      "reason": "invalid_key"
+    }
+  }
+}
+</code></pre>
+<h3 id="notifications"><a class="header" href="#notifications">Notifications</a></h3>
+<p>Notifications are pushed by the server for active subscriptions. They use a consistent envelope:</p>
+<ul>
+<li><code>jsonrpc</code>: <code>"2.0"</code></li>
+<li><code>method</code>: <code>"acuity_subscription"</code></li>
+<li><code>params</code>:
+<ul>
+<li><code>subscription</code>: the subscription ID string</li>
+<li><code>result</code>: the notification payload, which always includes a <code>type</code> field</li>
+</ul>
+</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_123",
+    "result": {
+      "type": "event",
+      "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+      "event": {
+        "blockNumber": 50,
+        "eventIndex": 3,
+        "timestamp": 1717171717000,
+        "event": {
+          "specVersion": 1234,
+          "palletName": "Referenda",
+          "eventName": "Submitted",
+          "palletIndex": 42,
+          "variantIndex": 0,
+          "eventIndex": 3,
+          "fields": {"index": 42}
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<h2 id="methods"><a class="header" href="#methods">Methods</a></h2>
+<h3 id="acuity_indexstatus"><a class="header" href="#acuity_indexstatus"><code>acuity_indexStatus</code></a></h3>
+<p>Request:</p>
+<pre><code class="language-json">{"jsonrpc":"2.0","id":1,"method":"acuity_indexStatus","params":{}}
+</code></pre>
+<p>Response payload:</p>
+<ul>
+<li><code>spans</code>: array of indexed block spans</li>
+<li>each span has:
+<ul>
+<li><code>start</code>: first indexed block</li>
+<li><code>end</code>: last indexed block</li>
+</ul>
+</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "spans": [
+      {"start": 1, "end": 1000}
+    ]
+  }
+}
+</code></pre>
+<h3 id="acuity_geteventmetadata"><a class="header" href="#acuity_geteventmetadata"><code>acuity_getEventMetadata</code></a></h3>
+<p>Request:</p>
+<pre><code class="language-json">{"jsonrpc":"2.0","id":2,"method":"acuity_getEventMetadata","params":{}}
+</code></pre>
+<p>Response payload:</p>
+<ul>
+<li><code>pallets</code>: array of pallets</li>
+<li>each pallet has:
+<ul>
+<li><code>index</code>: pallet event index</li>
+<li><code>name</code>: pallet name</li>
+<li><code>events</code>: array of event variants</li>
+</ul>
+</li>
+<li>each event variant has:
+<ul>
+<li><code>index</code>: variant index</li>
+<li><code>name</code>: variant name</li>
+</ul>
+</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "pallets": [
+      {
+        "index": 42,
+        "name": "Referenda",
+        "events": [
+          {"index": 0, "name": "Submitted"}
+        ]
+      }
+    ]
+  }
+}
+</code></pre>
+<h3 id="acuity_getevents"><a class="header" href="#acuity_getevents"><code>acuity_getEvents</code></a></h3>
+<p>Request parameters:</p>
+<ul>
+<li><code>key</code>: query key</li>
+<li><code>limit</code>: optional <code>u16</code>, default <code>100</code></li>
+<li><code>before</code>: optional event cursor</li>
+</ul>
+<p>Request:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "acuity_getEvents",
+  "params": {
+    "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+    "limit": 100,
+    "before": null
+  }
+}
+</code></pre>
+<p>Composite custom keys use an ordered array of typed values:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "acuity_getEvents",
+  "params": {
+    "key": {
+      "type": "Custom",
+      "value": {
+        "name": "item_revision",
+        "kind": "composite",
+        "value": [
+          {"kind": "bytes32", "value": "0xabc123..."},
+          {"kind": "u32", "value": 7}
+        ]
+      }
+    }
+  }
+}
+</code></pre>
+<p>Response payload:</p>
+<ul>
+<li><code>key</code>: the queried key</li>
+<li><code>events</code>: matching hydrated events, newest first</li>
+<li><code>proofs</code>: proof availability and items</li>
+<li><code>page</code>: pagination cursor information</li>
+</ul>
+<p><code>proofs</code> object:</p>
+<ul>
+<li><code>available</code>: boolean indicating whether proofs are included</li>
+<li><code>reason</code>: stable machine-readable reason such as <code>included</code>, <code>rpc_proof_unavailable</code>, or <code>finalized_proofs_unavailable</code></li>
+<li><code>message</code>: human-readable explanation</li>
+<li><code>items</code>: array of proof objects (present when <code>available</code> is <code>true</code>)</li>
+</ul>
+<p>Each proof item contains:</p>
+<ul>
+<li><code>blockNumber</code>: <code>u32</code></li>
+<li><code>blockHash</code>: hex-encoded block hash</li>
+<li><code>header</code>: serialized block header JSON</li>
+<li><code>storageKey</code>: hex-encoded <code>System.Events</code> storage key</li>
+<li><code>storageValue</code>: hex-encoded SCALE-encoded <code>System.Events</code> bytes for that block</li>
+<li><code>storageProof</code>: array of hex-encoded trie proof nodes</li>
+</ul>
+<p><code>page</code> object:</p>
+<ul>
+<li><code>nextCursor</code>: cursor for the next page, or <code>null</code> if no more results</li>
+<li><code>hasMore</code>: boolean indicating additional pages exist</li>
+</ul>
+<p>Each event in <code>events</code> contains:</p>
+<ul>
+<li><code>blockNumber</code>: <code>u32</code></li>
+<li><code>eventIndex</code>: zero-based <code>u32</code> ordinal within the block</li>
+<li><code>timestamp</code>: block timestamp in milliseconds since Unix epoch, from <code>Timestamp::Now</code> when available; <code>0</code> for blocks where that storage value is unavailable</li>
+<li><code>event</code>: decoded event JSON</li>
+</ul>
+<p>Decoded event JSON currently contains:</p>
+<ul>
+<li><code>specVersion</code></li>
+<li><code>palletName</code></li>
+<li><code>eventName</code></li>
+<li><code>palletIndex</code></li>
+<li><code>variantIndex</code></li>
+<li><code>eventIndex</code>: zero-based <code>u32</code> ordinal within the block</li>
+<li><code>fields</code></li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+    "events": [
+      {
+        "blockNumber": 50,
+        "eventIndex": 3,
+        "timestamp": 1717171717000,
+        "event": {
+          "specVersion": 1234,
+          "palletName": "Referenda",
+          "eventName": "Submitted",
+          "palletIndex": 42,
+          "variantIndex": 0,
+          "eventIndex": 3,
+          "fields": {
+            "index": 42
+          }
+        }
+      }
+    ],
+    "proofs": {
+      "available": true,
+      "reason": "included",
+      "message": "Finalized event proofs included.",
+      "items": [
+        {
+          "blockNumber": 50,
+          "blockHash": "0xabc123...",
+          "header": {
+            "parent_hash": "0x...",
+            "number": 50,
+            "state_root": "0x...",
+            "extrinsics_root": "0x...",
+            "digest": {"logs": []}
+          },
+          "storageKey": "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7",
+          "storageValue": "0x...",
+          "storageProof": ["0x..."]
+        }
+      ]
+    },
+    "page": {
+      "nextCursor": {"blockNumber": 49, "eventIndex": 7},
+      "hasMore": true
+    }
+  }
+}
+</code></pre>
+<p>Example when proofs are unavailable (indexer not in finalized mode):</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "key": {"type": "Custom", "value": {"name": "ref_index", "kind": "u32", "value": 42}},
+    "events": [{
+      "blockNumber": 50,
+      "eventIndex": 3,
+      "timestamp": 1717171717000,
+      "event": {
+        "specVersion": 1234,
+        "palletName": "Referenda",
+        "eventName": "Submitted",
+        "palletIndex": 42,
+        "variantIndex": 0,
+        "eventIndex": 3,
+        "fields": {
+          "index": 42
+        }
+      }
+    }],
+    "proofs": {
+      "available": false,
+      "reason": "finalized_proofs_unavailable",
+      "message": "Finalized proofs are only available when the indexer is running with finalized indexing."
+    },
+    "page": {
+      "nextCursor": null,
+      "hasMore": false
+    }
+  }
+}
+</code></pre>
+<h3 id="acuity_subscribestatus"><a class="header" href="#acuity_subscribestatus"><code>acuity_subscribeStatus</code></a></h3>
+<p>Request:</p>
+<pre><code class="language-json">{"jsonrpc":"2.0","id":5,"method":"acuity_subscribeStatus","params":{}}
+</code></pre>
+<p>Response payload: subscription ID string</p>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": "sub_abc123"
+}
+</code></pre>
+<h3 id="acuity_unsubscribestatus"><a class="header" href="#acuity_unsubscribestatus"><code>acuity_unsubscribeStatus</code></a></h3>
+<p>Request:</p>
+<pre><code class="language-json">{"jsonrpc":"2.0","id":6,"method":"acuity_unsubscribeStatus","params":{"subscription":"sub_abc123"}}
+</code></pre>
+<p>Response payload: <code>true</code></p>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "result": true
+}
+</code></pre>
+<h3 id="acuity_subscribeevents"><a class="header" href="#acuity_subscribeevents"><code>acuity_subscribeEvents</code></a></h3>
+<p>Request:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "acuity_subscribeEvents",
+  "params": {
+    "key": {"type": "Custom", "value": {"name": "account_id", "kind": "bytes32", "value": "0xabc..."}}
+  }
+}
+</code></pre>
+<p>Response payload: subscription ID string</p>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "result": "sub_def456"
+}
+</code></pre>
+<h3 id="acuity_unsubscribeevents"><a class="header" href="#acuity_unsubscribeevents"><code>acuity_unsubscribeEvents</code></a></h3>
+<p>Request:</p>
+<pre><code class="language-json">{"jsonrpc":"2.0","id":8,"method":"acuity_unsubscribeEvents","params":{"subscription":"sub_def456"}}
+</code></pre>
+<p>Response payload: <code>true</code></p>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "result": true
+}
+</code></pre>
+<h2 id="notifications-1"><a class="header" href="#notifications-1">Notifications</a></h2>
+<p>All subscription notifications use the method <code>acuity_subscription</code> and include the subscription ID in <code>params.subscription</code>. The <code>params.result</code> object always contains a <code>type</code> field indicating the notification type.</p>
+<h3 id="status-notifications"><a class="header" href="#status-notifications">Status notifications</a></h3>
+<p>Sent to status subscribers whenever the persisted indexed span advances.</p>
+<p><code>params.result.type</code>: <code>"status"</code></p>
+<p>Payload (in <code>params.result</code>):</p>
+<ul>
+<li><code>spans</code>: same array returned by <code>acuity_indexStatus</code></li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_abc123",
+    "result": {
+      "type": "status",
+      "spans": [
+        {"start": 1, "end": 1001}
+      ]
+    }
+  }
+}
+</code></pre>
+<h3 id="event-notifications"><a class="header" href="#event-notifications">Event notifications</a></h3>
+<p>Sent to event subscribers whenever a matching event is indexed.</p>
+<p><code>params.result.type</code>: <code>"event"</code></p>
+<p>Payload (in <code>params.result</code>):</p>
+<ul>
+<li><code>key</code>: subscribed key that matched</li>
+<li><code>event</code>: matching hydrated event object</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_def456",
+    "result": {
+      "type": "event",
+      "key": {"type": "Custom", "value": {"name": "item_id", "kind": "bytes32", "value": "0xabc..."}},
+      "event": {
+        "blockNumber": 50,
+        "eventIndex": 3,
+        "timestamp": 1717171717000,
+        "event": {
+          "specVersion": 1234,
+          "palletName": "Referenda",
+          "eventName": "Submitted",
+          "palletIndex": 42,
+          "variantIndex": 0,
+          "eventIndex": 3,
+          "fields": {
+            "index": 42
+          }
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<h3 id="subscription-termination-notifications"><a class="header" href="#subscription-termination-notifications">Subscription termination notifications</a></h3>
+<p>Sent best-effort before the server drops a subscriber because it cannot keep up.</p>
+<p><code>params.result.type</code>: <code>"terminated"</code></p>
+<p>Payload (in <code>params.result</code>):</p>
+<ul>
+<li><code>reason</code>: currently <code>backpressure</code></li>
+<li><code>message</code>: human-readable explanation</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "acuity_subscription",
+  "params": {
+    "subscription": "sub_def456",
+    "result": {
+      "type": "terminated",
+      "reason": "backpressure",
+      "message": "subscriber disconnected due to backpressure"
+    }
+  }
+}
+</code></pre>
+<p>This notification is best-effort only. If the subscriber queue is already full, the termination notice may not be delivered before the connection is dropped.</p>
+<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
+<p>The server uses standard JSON-RPC 2.0 error codes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Code</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>-32700</code></td><td>Parse error - invalid JSON</td></tr>
+<tr><td><code>-32600</code></td><td>Invalid request - not a valid JSON-RPC 2.0 object</td></tr>
+<tr><td><code>-32601</code></td><td>Method not found</td></tr>
+<tr><td><code>-32602</code></td><td>Invalid params</td></tr>
+<tr><td><code>-32603</code></td><td>Internal error</td></tr>
+<tr><td><code>-32001</code></td><td>Upstream unavailable - node RPC connection is down</td></tr>
+</tbody>
+</table>
+</div>
+<p>Application-specific error reasons are provided in <code>error.data.reason</code>:</p>
+<ul>
+<li><code>subscription_limit</code>: connection exceeds the per-connection subscription cap or the global total subscription cap</li>
+<li><code>temporarily_unavailable</code>: an RPC-backed request (<code>acuity_getEventMetadata</code> or <code>acuity_getEvents</code>) is made while the node connection is down</li>
+</ul>
+<p>Example when no request <code>id</code> could be recovered:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": null,
+  "error": {
+    "code": -32700,
+    "message": "Parse error"
+  }
+}
+</code></pre>
+<p>Invalid custom key payloads are returned as <code>-32602</code> responses, including:</p>
+<ul>
+<li>custom key names longer than <code>128</code> bytes</li>
+<li>custom string values longer than <code>1024</code> bytes</li>
+<li>composite keys with more than <code>64</code> elements</li>
+<li>composite keys nested deeper than <code>8</code> composite levels</li>
+<li>custom values whose encoded key payload exceeds <code>16384</code> bytes</li>
+</ul>
+<p>Operational failure modes that may also appear as connection drops or protocol-level failures include:</p>
+<ul>
+<li>oversized WebSocket frame or message rejected during protocol handling</li>
+<li>subscription control queue saturation</li>
+<li>connection idle timeout</li>
+</ul>
+<p>The server sends periodic WebSocket ping frames as a heartbeat. By default this is every 120 seconds, and when an idle timeout is configured the heartbeat interval is reduced to at most half of <code>idle_timeout_secs</code>. Incoming ping/pong frames count as connection activity.</p>
+<p>During node outages, local requests such as <code>acuity_indexStatus</code> continue to
+work. <code>acuity_getEventMetadata</code> and <code>acuity_getEvents</code> require live RPC access and return
+<code>-32001</code> (upstream unavailable) until the node connection is re-established.</p>
+<h2 id="pagination-semantics"><a class="header" href="#pagination-semantics">Pagination Semantics</a></h2>
+<p><code>acuity_getEvents</code> returns matches in descending order by <code>(blockNumber, eventIndex)</code>.</p>
+<ul>
+<li>default <code>limit</code> is <code>100</code></li>
+<li><code>limit</code> is clamped to <code>1..=max_events_limit</code> (default <code>1000</code>, configurable via <code>--max-events-limit</code>; invalid zero-valued configs are rejected at startup)</li>
+<li><code>before</code> is exclusive</li>
+</ul>
+<p>Example cursor:</p>
+<pre><code class="language-json">{"blockNumber": 50, "eventIndex": 3}
+</code></pre>
+<p>This returns only events strictly older than <code>(50, 3)</code>.</p>
+<p>Use the <code>page</code> object in the response for cursor-based pagination:</p>
+<pre><code class="language-json">{
+  "page": {
+    "nextCursor": {"blockNumber": 49, "eventIndex": 7},
+    "hasMore": true
+  }
+}
+</code></pre>
+<p>Pass <code>nextCursor</code> as the <code>before</code> parameter to fetch the next page.</p>
+<h2 id="key-format"><a class="header" href="#key-format">Key Format</a></h2>
+<p>Keys are JSON objects with a <code>type</code> discriminant.</p>
+<p>Supported key shapes:</p>
+<pre><code class="language-json">{"type":"Variant","value":[0,3]}
+{"type":"Custom","value":{"name":"para_id","kind":"u32","value":1000}}
+{"type":"Custom","value":{"name":"account_id","kind":"bytes32","value":"0x1234..."}}
+{"type":"Custom","value":{"name":"published","kind":"bool","value":true}}
+{"type":"Custom","value":{"name":"revision","kind":"u128","value":"42"}}
+{"type":"Custom","value":{"name":"slug","kind":"string","value":"hello"}}
+{"type":"Custom","value":{"name":"balance","kind":"u64","value":"42"}}
+</code></pre>
+<h3 id="variant"><a class="header" href="#variant"><code>Variant</code></a></h3>
+<ul>
+<li>array of <code>[pallet_index, variant_index]</code></li>
+</ul>
+<h3 id="custom"><a class="header" href="#custom"><code>Custom</code></a></h3>
+<p>Fields:</p>
+<ul>
+<li><code>name</code>: key name</li>
+<li><code>kind</code>: scalar type</li>
+<li><code>value</code>: scalar value encoded according to <code>kind</code></li>
+</ul>
+<p>Supported scalar kinds:</p>
+<ul>
+<li><code>bytes32</code>: 32-byte hex string, <code>0x</code> prefix accepted</li>
+<li><code>u32</code>: JSON number</li>
+<li><code>u64</code>: JSON integer or string on input, serialized as string on output</li>
+<li><code>u128</code>: JSON integer or string on input, serialized as string on output</li>
+<li><code>string</code>: JSON string</li>
+<li><code>bool</code>: JSON boolean</li>
+</ul>
+<p>Composite keys are encoded recursively and must satisfy these protocol-level limits:</p>
+<ul>
+<li>max composite elements per composite value: <code>64</code></li>
+<li>max composite nesting depth: <code>8</code></li>
+<li>max encoded custom value size: <code>16384</code> bytes</li>
+</ul>
+<h2 id="storage-notes"><a class="header" href="#storage-notes">Storage Notes</a></h2>
+<p>Index entries store event refs locally in sled.</p>
+<p>Hydrated event payloads are fetched from the node on demand for:</p>
+<ul>
+<li><code>acuity_getEvents</code> responses</li>
+<li>event subscription notifications</li>
+</ul>
+<p>Hydration also reads <code>Timestamp::Now</code> for each returned block so every hydrated event includes a top-level <code>timestamp</code> field. For rare blocks where <code>Timestamp::Now</code> is unavailable, the API returns <code>timestamp: 0</code> instead of failing the request.</p>
+<p>The API always returns hydrated events for these surfaces, so live node access is required to serve them.</p>
+<h2 id="delivery-and-backpressure"><a class="header" href="#delivery-and-backpressure">Delivery and Backpressure</a></h2>
+<p>Subscription delivery uses bounded internal queues.</p>
+<ul>
+<li>slow subscribers are removed instead of being buffered indefinitely</li>
+<li>the server attempts to send a <code>terminated</code> notification before removal</li>
+<li>if that best-effort notification cannot be queued, the client may observe only the disconnect</li>
+</ul>
+<h2 id="connection-limits"><a class="header" href="#connection-limits">Connection Limits</a></h2>
+<p>The server applies these connection-level limits (defaults; all configurable via CLI flags or <code>--options-config</code>):</p>
+<ul>
+<li>max concurrent WebSocket connections: <code>1024</code> (<code>--max-connections</code>)</li>
+<li>max total subscriptions across all connections: <code>65536</code> (<code>--max-total-subscriptions</code>)</li>
+<li>max subscriptions per connection: <code>128</code> (<code>--max-subscriptions-per-connection</code>)</li>
+<li>subscription notification buffer size: <code>256</code> (<code>--subscription-buffer-size</code>)</li>
+<li>subscription control channel buffer: <code>1024</code> (<code>--subscription-control-buffer-size</code>)</li>
+<li>idle timeout: <code>300s</code> (<code>--idle-timeout-secs</code>, <code>0</code> disables the timeout)</li>
+<li>max events per query: <code>1000</code> (<code>--max-events-limit</code>)</li>
+</ul>
+<p>If the global connection cap is exhausted, new upgrade attempts are rejected with
+HTTP <code>503 Service Unavailable</code>.</p>
+<p>If the total subscription cap is reached, new subscription requests are rejected
+with a <code>-32602</code> error response with <code>data.reason: "subscription_limit"</code>. Because the
+subscription was never established, no termination notification is
+sent for that initial rejection.</p>
+<p>Protocol-level limits (not configurable at runtime):</p>
+<ul>
+<li>max WebSocket message size: <code>256 KiB</code></li>
+<li>max WebSocket frame size: <code>64 KiB</code></li>
+<li>max custom key name length: <code>128</code> bytes</li>
+<li>max custom string key length: <code>1024</code> bytes</li>
+<li>max composite elements per composite value: <code>64</code></li>
+<li>max composite nesting depth: <code>8</code></li>
+<li>max encoded custom value size: <code>16384</code> bytes</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="recipes"><a class="header" href="#recipes">Recipes</a></h1>
+<h2 id="run-against-a-live-node"><a class="header" href="#run-against-a-live-node">Run Against A Live Node</a></h2>
+<pre><code class="language-bash">acuity-index run ./mychain.toml --url wss://mynode:443
+</code></pre>
+<h2 id="generate-a-starter-spec"><a class="header" href="#generate-a-starter-spec">Generate A Starter Spec</a></h2>
+<pre><code class="language-bash">acuity-index generate-index-spec ./mychain.toml --url wss://mynode:443
+</code></pre>
+<h2 id="purge-an-existing-index"><a class="header" href="#purge-an-existing-index">Purge An Existing Index</a></h2>
+<pre><code class="language-bash">acuity-index purge-index ./mychain.toml
+</code></pre>
+<h2 id="start-the-synthetic-node"><a class="header" href="#start-the-synthetic-node">Start The Synthetic Node</a></h2>
+<pre><code class="language-bash">just synthetic-node
+</code></pre>
+<h2 id="seed-synthetic-smoke-data"><a class="header" href="#seed-synthetic-smoke-data">Seed Synthetic Smoke Data</a></h2>
+<pre><code class="language-bash">just seed-smoke
+</code></pre>
+<h2 id="run-ignored-integration-tests"><a class="header" href="#run-ignored-integration-tests">Run Ignored Integration Tests</a></h2>
+<pre><code class="language-bash">just test-integration
+</code></pre>
+<h2 id="build-the-book"><a class="header" href="#build-the-book">Build The Book</a></h2>
+<pre><code class="language-bash">just book-build
+</code></pre>
+<h2 id="serve-the-book-locally"><a class="header" href="#serve-the-book-locally">Serve The Book Locally</a></h2>
+<pre><code class="language-bash">just book-serve
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="security-and-deployment"><a class="header" href="#security-and-deployment">Security And Deployment</a></h1>
+<p>This chapter summarizes the current deployment posture of the Internet-facing
+surfaces in this repository, the hardening already implemented, and the main
+remaining requirements before the indexer is exposed directly to dapp clients.</p>
+<p>It is a companion to <a href="#architecture">Architecture</a> and <a href="#websockets-api">WebSockets API</a>,
+and should reflect the current code layout under <code>src/main.rs</code>,
+<code>src/indexer.rs</code>, <code>src/event_hydration.rs</code>, <code>src/runtime_state.rs</code>,
+<code>src/protocol.rs</code>, and <code>src/metrics.rs</code>.</p>
+<h2 id="scope"><a class="header" href="#scope">Scope</a></h2>
+<p>Reviewed components:</p>
+<ul>
+<li><code>src/main.rs</code></li>
+<li><code>src/indexer.rs</code></li>
+<li><code>src/event_hydration.rs</code></li>
+<li><code>src/runtime_state.rs</code></li>
+<li><code>src/protocol.rs</code></li>
+<li><code>src/metrics.rs</code></li>
+<li>dependency surface via <code>cargo audit</code></li>
+</ul>
+<p>Primary attack surface:</p>
+<ul>
+<li>public WebSocket listener on <code>0.0.0.0:&lt;port&gt;</code></li>
+<li>JSON-RPC request parsing for:
+<ul>
+<li><code>acuity_indexStatus</code></li>
+<li><code>acuity_getEventMetadata</code></li>
+<li><code>acuity_getEvents</code></li>
+<li><code>acuity_subscribeStatus</code></li>
+<li><code>acuity_unsubscribeStatus</code></li>
+<li><code>acuity_subscribeEvents</code></li>
+<li><code>acuity_unsubscribeEvents</code></li>
+</ul>
+</li>
+<li>subscription dispatch path between connection handlers and the indexer/runtime subscription registry</li>
+<li>optional OpenMetrics HTTP listener on <code>0.0.0.0:&lt;metrics_port&gt;</code></li>
+<li>upstream node RPC trust boundary used for event hydration and proof retrieval</li>
+</ul>
+<h2 id="current-hardening"><a class="header" href="#current-hardening">Current Hardening</a></h2>
+<p>The following protections are implemented in the current server.</p>
+<h3 id="resource-exhaustion-controls"><a class="header" href="#resource-exhaustion-controls">Resource-exhaustion controls</a></h3>
+<ul>
+<li>
+<p>Bounded subscription control queue</p>
+<ul>
+<li>The connection-to-dispatcher control path uses a bounded Tokio channel.</li>
+<li>Saturation is treated as a disconnect/error path rather than unbounded buffering.</li>
+</ul>
+</li>
+<li>
+<p>Bounded per-subscriber notification queues</p>
+<ul>
+<li>Each connection gets a bounded notification channel for subscription pushes.</li>
+<li>Slow subscribers are removed instead of being buffered indefinitely.</li>
+<li>The server sends a best-effort <code>terminated</code> notification with reason <code>backpressure</code> before removal.</li>
+</ul>
+</li>
+<li>
+<p>WebSocket frame and message size limits</p>
+<ul>
+<li>max WebSocket message size: <code>256 KiB</code></li>
+<li>max WebSocket frame size: <code>64 KiB</code></li>
+<li>Oversized payloads are rejected during protocol handling.</li>
+</ul>
+</li>
+<li>
+<p>Bounded custom key input sizes</p>
+<ul>
+<li>custom key name limit: <code>128</code> bytes</li>
+<li>custom string value limit: <code>1024</code> bytes</li>
+<li>composite custom values are limited to:
+<ul>
+<li><code>64</code> elements</li>
+<li><code>8</code> nesting levels</li>
+<li><code>16384</code> encoded bytes</li>
+</ul>
+</li>
+<li>Invalid or oversized key payloads are rejected before subscription registration or index scans.</li>
+</ul>
+</li>
+<li>
+<p>Global connection cap</p>
+<ul>
+<li>Concurrent WebSocket connections are capped at <code>1024</code> by default.</li>
+<li>When the cap is exhausted, new upgrade attempts are rejected with HTTP <code>503 Service Unavailable</code>.</li>
+</ul>
+</li>
+<li>
+<p>Subscription caps</p>
+<ul>
+<li>A single connection may hold at most <code>128</code> subscriptions by default.</li>
+<li>There is also a global total subscription cap of <code>65536</code> by default across all connections.</li>
+<li>Duplicate subscription attempts do not create extra server-side registrations.</li>
+</ul>
+</li>
+<li>
+<p>Query result cap</p>
+<ul>
+<li><code>acuity_getEvents</code> applies a configurable per-request limit clamp.</li>
+<li>Default maximum events per query: <code>1000</code>.</li>
+<li>Client-provided <code>limit</code> values are clamped into <code>1..=max_events_limit</code>.</li>
+</ul>
+</li>
+<li>
+<p>Idle timeout</p>
+<ul>
+<li>Idle connections are closed after <code>300</code> seconds by default.</li>
+<li>Setting <code>idle_timeout_secs = 0</code> disables this timeout.</li>
+</ul>
+</li>
+<li>
+<p>Heartbeat pings</p>
+<ul>
+<li>The server sends WebSocket ping frames periodically.</li>
+<li>The interval is bounded by the idle-timeout configuration (<code>idle_timeout_secs / 2</code>, capped at 120 seconds).</li>
+<li>Incoming ping/pong traffic counts as connection activity.</li>
+</ul>
+</li>
+</ul>
+<h3 id="crash-resistance-and-recovery-improvements"><a class="header" href="#crash-resistance-and-recovery-improvements">Crash-resistance and recovery improvements</a></h3>
+<ul>
+<li>
+<p>Recoverable upstream RPC failures no longer require a full process crash.</p>
+<ul>
+<li>The supervisor loop reconnects with exponential backoff.</li>
+<li>The current span is saved before the indexer task returns.</li>
+<li>Existing WebSocket clients remain connected while local-only requests continue to work.</li>
+</ul>
+</li>
+<li>
+<p>RPC-backed requests degrade to temporary unavailability.</p>
+<ul>
+<li><code>acuity_getEventMetadata</code> and <code>acuity_getEvents</code> return JSON-RPC <code>-32001</code> with <code>data.reason = "temporarily_unavailable"</code> while the node RPC is down.</li>
+<li><code>acuity_indexStatus</code> remains available from local sled state.</li>
+</ul>
+</li>
+<li>
+<p>Malformed persisted records are handled defensively.</p>
+<ul>
+<li>Malformed span values/keys are skipped with logging during reads.</li>
+<li>Malformed persisted event index records are skipped with logging rather than crashing the process.</li>
+</ul>
+</li>
+<li>
+<p>Poisoned subscription/runtime locks are recovered.</p>
+<ul>
+<li>Shared runtime mutexes use a recovery path that logs and continues rather than panicking immediately.</li>
+</ul>
+</li>
+<li>
+<p>Startup and reconnect behavior are explicit.</p>
+<ul>
+<li>Genesis-hash mismatch remains a fail-fast startup/runtime error to prevent cross-chain data mixing.</li>
+<li>State-pruning misconfiguration remains a fatal operator error.</li>
+</ul>
+</li>
+</ul>
+<h3 id="exposure-segmentation"><a class="header" href="#exposure-segmentation">Exposure segmentation</a></h3>
+<ul>
+<li>Metrics are served on a separate HTTP listener and port.
+<ul>
+<li>This keeps the observability surface distinct from the public WebSockets API.</li>
+<li>It does not make the metrics endpoint safe for public exposure by itself.</li>
+</ul>
+</li>
+</ul>
+<h2 id="residual-risks"><a class="header" href="#residual-risks">Residual Risks</a></h2>
+<p>The most important remaining deployment requirements are below.</p>
+<h3 id="1-meter-every-query-and-require-payment"><a class="header" href="#1-meter-every-query-and-require-payment">1. Meter every query and require payment</a></h3>
+<p>Before direct public exposure, the indexer needs per-query metering and payment enforcement so the index provider can bill usage.</p>
+<p>Impact:</p>
+<ul>
+<li>Every query should be counted and accounted for.</li>
+<li>Expensive request paths should be covered by the metering model.</li>
+<li>Payment checks should gate access before event hydration and proof retrieval are served.</li>
+<li>Direct dapp access should remain tied to the provider’s billing policy.</li>
+</ul>
+<p>Assessment:</p>
+<ul>
+<li>This is the primary remaining product requirement before treating the service as Internet-facing.</li>
+</ul>
+<h3 id="2-no-in-process-tls"><a class="header" href="#2-no-in-process-tls">2. No in-process TLS</a></h3>
+<p>The service speaks plain WebSocket (<code>ws</code>) and plain HTTP for metrics.</p>
+<p>Impact:</p>
+<ul>
+<li>Confidentiality and integrity depend on external deployment infrastructure.</li>
+<li>Direct exposure without TLS termination allows traffic observation and tampering in transit.</li>
+<li>The metrics endpoint has the same issue when exposed directly.</li>
+</ul>
+<p>Assessment:</p>
+<ul>
+<li>Safe deployment requires TLS termination and normal edge protections outside the process.</li>
+</ul>
+<h3 id="3-public-expensive-endpoints-remain-available"><a class="header" href="#3-public-expensive-endpoints-remain-available">3. Public expensive endpoints remain available</a></h3>
+<p><code>acuity_getEventMetadata</code>, <code>acuity_getEvents</code>, event hydration, proof retrieval, and live subscriptions are still publicly callable.</p>
+<p>Impact:</p>
+<ul>
+<li>Attackers can still consume CPU, RPC bandwidth, storage I/O, and upstream node capacity within the configured limits.</li>
+<li>Hydrated event reads are not purely local; they depend on live node access.</li>
+<li>Finalized proof inclusion adds extra upstream work.</li>
+<li>Current caps reduce per-connection blast radius but do not provide fairness across many clients or many source IPs.</li>
+</ul>
+<p>Assessment:</p>
+<ul>
+<li>The server is substantially more resilient than an unbounded implementation.</li>
+<li>It is still vulnerable to sustained abuse, especially distributed abuse, because there is no built-in rate limiting or admission control by identity/network.</li>
+</ul>
+<h3 id="4-metrics-endpoint-can-leak-operational-metadata"><a class="header" href="#4-metrics-endpoint-can-leak-operational-metadata">4. Metrics endpoint can leak operational metadata</a></h3>
+<p>If enabled, the separate OpenMetrics endpoint exposes operational state such as:</p>
+<ul>
+<li>RPC connectivity</li>
+<li>reconnect counts</li>
+<li>current indexed span</li>
+<li>latest seen head</li>
+<li>WebSocket connection count</li>
+<li>status and event subscription counts</li>
+<li>database size</li>
+<li>block fetch/process/commit timing histograms</li>
+</ul>
+<p>Impact:</p>
+<ul>
+<li>Anything that can reach the metrics port can observe internal health and capacity signals.</li>
+<li>These signals may help attackers tune abuse or infer operational state.</li>
+</ul>
+<p>Assessment:</p>
+<ul>
+<li>Lower severity than unauthenticated data access, but still an important exposure.</li>
+<li>The metrics port should be treated as an internal observability interface, not part of the public API.</li>
+</ul>
+<h3 id="5-dependency-maintenance-risk-remains-material"><a class="header" href="#5-dependency-maintenance-risk-remains-material">5. Dependency maintenance risk remains material</a></h3>
+<p>The project still depends on some crates with maintenance or ecosystem advisories.</p>
+<p>Impact:</p>
+<ul>
+<li>Even without a confirmed application-level exploit, these dependencies increase long-term supply-chain and maintenance risk.</li>
+<li>Some affected crates are in production dependency paths; others land through dev/test or optional light-client-related paths.</li>
+</ul>
+<p>Assessment:</p>
+<ul>
+<li>This is primarily a patch-management and dependency-upgrade concern.</li>
+<li>The <code>sled</code> dependency remains a notable long-term risk because multiple advisories continue to land through it.</li>
+</ul>
+<h3 id="6-some-fail-fast-paths-remain-intentional"><a class="header" href="#6-some-fail-fast-paths-remain-intentional">6. Some fail-fast paths remain intentional</a></h3>
+<p>The production runtime has moved many remotely reachable failure paths away from <code>unwrap()</code>-style crashes, but some startup-only or invariant-enforcement failures still intentionally stop the process.</p>
+<p>Impact:</p>
+<ul>
+<li>Misconfiguration such as wrong genesis hash or pruned historical state still results in process exit.</li>
+<li>This is mainly an operability/reliability concern rather than a direct remote-exploitation path.</li>
+</ul>
+<p>Assessment:</p>
+<ul>
+<li>Reasonable for invariant protection.</li>
+<li>Operators should still treat startup config validation and deployment checks as part of the security boundary.</li>
+</ul>
+<h2 id="cargo-audit"><a class="header" href="#cargo-audit">Cargo Audit</a></h2>
+<p><code>cargo audit -q</code> reported the following advisories during review:</p>
+<ol>
+<li>
+<p><code>RUSTSEC-2024-0388</code></p>
+<ul>
+<li>dependency chain includes <code>derivative 2.2.0</code></li>
+<li>status: unmaintained</li>
+</ul>
+</li>
+<li>
+<p><code>RUSTSEC-2025-0057</code></p>
+<ul>
+<li>dependency chain: <code>sled -&gt; fxhash 0.2.1</code></li>
+<li>status: unmaintained</li>
+</ul>
+</li>
+<li>
+<p><code>RUSTSEC-2024-0384</code></p>
+<ul>
+<li>dependency chain: <code>sled -&gt; parking_lot 0.11.2 -&gt; instant 0.1.13</code></li>
+<li>status: unmaintained</li>
+</ul>
+</li>
+<li>
+<p><code>RUSTSEC-2025-0161</code></p>
+<ul>
+<li>dependency chain includes <code>libsecp256k1 0.7.2</code></li>
+<li>status: unmaintained</li>
+</ul>
+</li>
+<li>
+<p><code>RUSTSEC-2024-0436</code></p>
+<ul>
+<li>dependency chain includes <code>paste 1.0.15</code></li>
+<li>status: unmaintained</li>
+</ul>
+</li>
+</ol>
+<p>Assessment:</p>
+<ul>
+<li>The <code>sled</code> advisories continue to indicate maintenance risk in the storage stack.</li>
+<li>Additional advisories now also land through Substrate / cryptography dependency chains.</li>
+<li>These findings do not by themselves prove a directly exploitable application bug in the WebSocket service, but they should be tracked and revisited during dependency updates.</li>
+</ul>
+<h2 id="recommended-next-steps"><a class="header" href="#recommended-next-steps">Recommended Next Steps</a></h2>
+<p>Highest-value remaining work:</p>
+<ol>
+<li>Add per-query metering for all public request paths.</li>
+<li>Require cryptocurrency payment to the index provider before serving billable queries.</li>
+<li>Define which request types are billable and enforce that policy before hydration or proof retrieval.</li>
+<li>Continue to require TLS termination in documented deployment paths.</li>
+<li>Keep the metrics endpoint internal-only by default in deployment examples.</li>
+<li>Track or remediate <code>cargo audit</code> findings, especially long-term <code>sled</code> replacement/containment work and transitive cryptography dependency maintenance risk.</li>
+<li>Continue expanding end-to-end tests around overload and backpressure behavior.</li>
+</ol>
+<h2 id="deployment-guidance"><a class="header" href="#deployment-guidance">Deployment Guidance</a></h2>
+<p>For Internet exposure, deploy behind infrastructure that supports the billing and metering model:</p>
+<ul>
+<li>TLS termination</li>
+<li>request logging for query accounting</li>
+<li>per-query metering</li>
+<li>cryptocurrency payment enforcement at the access edge or application layer</li>
+<li>health checks</li>
+<li>internal-only exposure for the metrics port when enabled</li>
+</ul>
+<p>Also assume the upstream Substrate node is part of the service envelope:</p>
+<ul>
+<li>keep RPC access restricted where possible</li>
+<li>run archival pruning settings required by the application</li>
+<li>monitor RPC availability separately from the public WebSocket service</li>
+</ul>
+<p>Without metering and payment enforcement, the service should not be treated as ready for direct public dapp access.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="benchmarking"><a class="header" href="#benchmarking">Benchmarking</a></h1>
+<p>The repository includes an end-to-end benchmark harness for the synthetic
+runtime.</p>
+<h2 id="run-the-benchmark"><a class="header" href="#run-the-benchmark">Run The Benchmark</a></h2>
+<pre><code class="language-bash">just benchmark-indexing
+</code></pre>
+<p>This recipe:</p>
+<ol>
+<li>builds the release binaries</li>
+<li>starts a disposable synthetic node with timed blocks</li>
+<li>bulk-seeds deterministic transactions</li>
+<li>runs <code>benchmark_synthetic_indexing</code></li>
+<li>waits until seeded queries are observable through <code>GetEvents</code></li>
+<li>emits throughput and size metrics</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
+<p>Acuity Index is a config-driven event indexer for Substrate chains. It decodes
+runtime events with <code>subxt</code>, derives query keys from TOML config, stores index
+entries in <code>sled</code>, and serves query access over WebSocket.</p>
+<h2 id="main-components"><a class="header" href="#main-components">Main Components</a></h2>
+<ul>
+<li><code>src/main.rs</code>: CLI, config loading, database initialization, watcher setup, metrics listener, and reconnect supervisor loop</li>
+<li><code>src/indexer.rs</code>: indexing pipeline, resume logic, live-head tailing, key derivation, notification fanout</li>
+<li><code>src/config.rs</code>: index-spec and options-config parsing plus validation</li>
+<li><code>src/ws_api/</code>: public API implementation and connection lifecycle</li>
+<li><code>src/protocol.rs</code>: wire types, key encodings, tree layout, and WebSocket runtime limits</li>
+<li><code>src/runtime_state.rs</code>: shared live process state across long-lived tasks</li>
+<li><code>src/event_hydration.rs</code>: decoded-event hydration plus finalized <code>System.Events</code> proof fetching</li>
+<li><code>src/config_gen.rs</code>: live metadata to starter spec generation</li>
+<li><code>src/metrics.rs</code>: metrics registry and HTTP export</li>
+<li><code>src/synthetic_devnet.rs</code>: synthetic local chain helpers and shared test types</li>
+</ul>
+<h2 id="startup-sequence"><a class="header" href="#startup-sequence">Startup Sequence</a></h2>
+<p>The normal startup path is:</p>
+<ol>
+<li>parse CLI args</li>
+<li>load the required index spec</li>
+<li>validate config and resolve runtime options</li>
+<li>open <code>sled</code></li>
+<li>verify or initialize <code>genesis_hash</code></li>
+<li>start long-lived tasks such as WebSocket serving and spec watching</li>
+<li>enter the RPC reconnect and indexing supervisor loop</li>
+</ol>
+<h2 id="data-model"><a class="header" href="#data-model">Data Model</a></h2>
+<p>The <code>sled</code> database is organized into trees opened by <code>Trees::open</code>:</p>
+<ul>
+<li><code>root</code>: database-level values such as <code>genesis_hash</code></li>
+<li><code>span</code>: indexed block spans for resume and reindex logic</li>
+<li><code>variant</code>: event references keyed by pallet and variant indices</li>
+<li><code>index</code>: custom and built-in query keys with <code>(block_number, event_index)</code> suffixes</li>
+<li><code>events</code>: decoded event JSON keyed by <code>(block_number, event_index)</code></li>
+</ul>
+<h2 id="indexing-flow"><a class="header" href="#indexing-flow">Indexing Flow</a></h2>
+<p>High-level behavior:</p>
+<ul>
+<li>determine the starting head block</li>
+<li>load previously indexed spans</li>
+<li>resume an existing tail span or index the current head immediately</li>
+<li>run backward backfill and live-head tracking concurrently</li>
+</ul>
+<p>If finalized mode is enabled, the same finalized-only setting governs whether
+API callers can receive proof material for <code>GetEvents</code>.</p>
+<h2 id="concurrency-model"><a class="header" href="#concurrency-model">Concurrency Model</a></h2>
+<p>The indexer uses async queues for both descending backfill and ascending live
+head processing. <code>queue_depth</code> applies to both so the process can catch up on
+fast-moving chains instead of advancing one block at a time.</p>
+<p>Because futures can complete out of order, the implementation keeps orphan maps
+until contiguous spans can be extended safely.</p>
+<h2 id="invariants"><a class="header" href="#invariants">Invariants</a></h2>
+<ul>
+<li>a database path belongs to exactly one chain identity</li>
+<li>accepted spec reloads should not take down the public service</li>
+<li>malformed persisted data should be handled defensively</li>
+<li>the synthetic test path should stay close to production architecture</li>
+<li>public API correctness is validated end to end, not only through unit tests</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="contributing"><a class="header" href="#contributing">Contributing</a></h1>
+<h2 id="development-entry-points"><a class="header" href="#development-entry-points">Development Entry Points</a></h2>
+<p>The repository uses <code>just</code> as the main developer command surface:</p>
+<pre><code class="language-bash">just build
+just test
+just runtime-build
+just synthetic-node
+just seed-smoke
+just test-integration
+just benchmark-indexing
+</code></pre>
+<h2 id="code-areas"><a class="header" href="#code-areas">Code Areas</a></h2>
+<p>High-level module boundaries:</p>
+<ul>
+<li><code>src/main.rs</code>: CLI, startup, supervisor loop, long-lived tasks</li>
+<li><code>src/indexer.rs</code>: indexing pipeline and span tracking</li>
+<li><code>src/config.rs</code>: TOML schema and runtime mapping resolution</li>
+<li><code>src/ws_api/</code>: public WebSockets API</li>
+<li><code>src/protocol.rs</code>: shared protocol types and database key layout</li>
+<li><code>src/runtime_state.rs</code>: live shared runtime state</li>
+<li><code>src/metrics.rs</code>: Prometheus/OpenMetrics integration</li>
+<li><code>src/config_gen.rs</code>: starter index-spec generation from metadata</li>
+<li><code>src/synthetic_devnet.rs</code>: synthetic local chain support</li>
+<li><code>runtime/</code>: in-repo synthetic runtime used for integration testing and benchmarking</li>
+</ul>
+<h2 id="suggested-workflow"><a class="header" href="#suggested-workflow">Suggested Workflow</a></h2>
+<ol>
+<li>run unit tests with <code>just test</code></li>
+<li>use the synthetic harness when your change affects observable runtime behavior</li>
+<li>run ignored integration tests when changing indexing, API, or reconnect logic</li>
+<li>benchmark with the synthetic harness when changing throughput-sensitive code</li>
+<li>update the book when user-facing or operator-facing behavior changes</li>
+</ol>
+<h2 id="testing-philosophy"><a class="header" href="#testing-philosophy">Testing Philosophy</a></h2>
+<p>Unit tests must be deterministic and must not rely on wall-clock timing.
+Behavior that depends on real node timing or networking belongs in integration
+tests instead.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="maintainer-release-process"><a class="header" href="#maintainer-release-process">Maintainer Release Process</a></h1>
+<p><code>acuity-index</code> uses two separate release tools:</p>
+<ul>
+<li><code>cargo-release</code> handles the crate release itself</li>
+<li><code>cargo-dist</code> handles the GitHub Release artifacts</li>
+<li>GitHub Actions only reacts after a release tag has been pushed</li>
+</ul>
+<p>In practice, that means the version bump and crates.io publish happen through
+standard Rust release tooling, while GitHub is used only to build and upload
+binary artifacts for the tagged release.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>The release machine must have:</p>
+<ul>
+<li>Rust stable</li>
+<li><code>cargo-release</code></li>
+<li><code>cargo-dist</code></li>
+<li><code>just</code></li>
+<li><code>polkadot-omni-node</code></li>
+</ul>
+<p>The integration suite is part of the release gate, so the machine running the
+release must be able to build the in-repo synthetic runtime and run the local
+node-backed tests.</p>
+<h2 id="release-gate"><a class="header" href="#release-gate">Release Gate</a></h2>
+<p>Before <code>cargo-release</code> is allowed to tag or publish, it runs:</p>
+<pre><code class="language-bash">cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+just test-integration
+</code></pre>
+<p>These checks are wired through <code>scripts/release-checks.sh</code> and are also exposed
+as:</p>
+<pre><code class="language-bash">just release-checks
+</code></pre>
+<p>If any step fails, the release stops before the version is bumped, before a tag
+is created, and before anything is published.</p>
+<h2 id="updating-the-changelog"><a class="header" href="#updating-the-changelog">Updating The Changelog</a></h2>
+<p>Before running the release command, update the canonical repository changelog in
+<code>CHANGELOG.md</code> and commit it. The GitHub release workflow publishes the matching
+version section from that file as the release notes.</p>
+<p>You can preview exactly what GitHub will publish with:</p>
+<pre><code class="language-bash">just release-notes
+just release-notes v0.8.0
+</code></pre>
+<p>That helper reads <code>CHANGELOG.md</code> and extracts the section whose heading starts
+with <code>## v&lt;version&gt;</code>.</p>
+<p>The book no longer owns the release history; if you want a book-visible entry
+point, keep <code>book/src/changelog.md</code> as a short pointer back to <code>CHANGELOG.md</code>.</p>
+<h2 id="creating-a-release"><a class="header" href="#creating-a-release">Creating A Release</a></h2>
+<p>Run one of:</p>
+<pre><code class="language-bash">just release patch
+just release minor
+just release major
+</code></pre>
+<p>Equivalent direct commands are:</p>
+<pre><code class="language-bash">cargo release patch --execute
+cargo release minor --execute
+cargo release major --execute
+</code></pre>
+<p><code>cargo-release</code> is configured to:</p>
+<ol>
+<li>require the <code>main</code> branch</li>
+<li>run the release gate</li>
+<li>bump the crate version in <code>Cargo.toml</code></li>
+<li>create a release commit with the message <code>chore(release): &lt;version&gt;</code></li>
+<li>create a git tag named <code>v&lt;version&gt;</code></li>
+<li>publish the crate to crates.io</li>
+<li>push the release commit and tag</li>
+</ol>
+<p>Dry runs are still available via plain <code>cargo release &lt;level&gt;</code> without
+<code>--execute</code>.</p>
+<h2 id="github-artifacts"><a class="header" href="#github-artifacts">GitHub Artifacts</a></h2>
+<p>After <code>cargo-release</code> pushes the release tag, GitHub Actions runs the
+<code>cargo-dist</code> workflow that was generated from the dist configuration.</p>
+<p><code>cargo-dist</code> is not the thing that decides whether the release is allowed to
+happen. The integration tests and other release checks run locally before the
+tag exists.</p>
+<p>The GitHub workflow only:</p>
+<ol>
+<li>reads the pushed version tag</li>
+<li>plans the dist build for that tag</li>
+<li>builds the configured release artifacts</li>
+<li>extracts the matching tagged section from <code>CHANGELOG.md</code></li>
+<li>creates or updates the GitHub Release with those notes</li>
+<li>uploads the archives and checksum files</li>
+</ol>
+<p>The current dist configuration builds release artifacts for:</p>
+<ul>
+<li><code>aarch64-apple-darwin</code></li>
+<li><code>aarch64-unknown-linux-gnu</code></li>
+<li><code>x86_64-apple-darwin</code></li>
+<li><code>x86_64-unknown-linux-gnu</code></li>
+<li><code>x86_64-pc-windows-msvc</code></li>
+</ul>
+<h2 id="dist-configuration"><a class="header" href="#dist-configuration">Dist Configuration</a></h2>
+<p><code>cargo-dist</code> is configured in <code>dist-workspace.toml</code>. That file tells dist what
+artifacts to build and how the release workflow should behave.</p>
+<p>The repo uses a dedicated <code>dist</code> profile in <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[profile.dist]
+inherits = "release"
+lto = "thin"
+</code></pre>
+<p>That keeps distribution builds optimized while avoiding the heavier <code>fat</code> LTO
+setting used by the normal <code>release</code> profile.</p>
+<h2 id="recommended-maintainer-flow"><a class="header" href="#recommended-maintainer-flow">Recommended Maintainer Flow</a></h2>
+<p>For a normal patch release:</p>
+<pre><code class="language-bash">git switch main
+git pull --ff-only
+just release-checks
+just release patch
+</code></pre>
+<p>After the tag is pushed:</p>
+<ul>
+<li>crates.io gets the new crate release from <code>cargo-release</code></li>
+<li>GitHub Releases gets binary artifacts from <code>cargo-dist</code></li>
+</ul>
+<h2 id="publicise-the-release"><a class="header" href="#publicise-the-release">Publicise The Release</a></h2>
+<p>Once the release is published, share it in the places most likely to reach
+acuity-index users and contributors:</p>
+<ul>
+<li>the Polkadot forum or another main Polkadot/Substrate developer discussion channel</li>
+<li>the Polkadot Discord, Matrix, or Telegram developer channels</li>
+<li>a short X/Twitter post linking to the GitHub release</li>
+</ul>
+<p>For larger releases, consider also posting to Hacker News (Show HN) and targeted
+Reddit communities. If the release is especially substantial, a short blog or
+book note can help with long-tail discovery and search visibility.</p>
+<h2 id="regenerating-dist-ci"><a class="header" href="#regenerating-dist-ci">Regenerating Dist CI</a></h2>
+<p>If you change <code>dist-workspace.toml</code> or other dist-related release settings,
+regenerate the GitHub Actions workflow with:</p>
+<pre><code class="language-bash">dist generate --mode ci
+</code></pre>
+<p>This updates the generated workflow under <code>.github/workflows/</code> so it matches
+the current dist configuration.</p>
+<p>The generated workflow is intentionally tag-driven only. Do not move the
+integration suite into GitHub Actions; those checks are meant to stay in the
+local release gate.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

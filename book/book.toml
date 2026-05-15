@@ -5,7 +5,7 @@ language = "en"
 src = "src"
 
 [build]
-build-dir = "../target/book"
+build-dir = "../docs"
 
 [output.html]
 git-repository-url = "https://github.com/acuity-network/acuity-index"
