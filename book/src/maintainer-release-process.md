@@ -1,13 +1,14 @@
 # Maintainer Release Process
 
-`acuity-index` uses a split release flow:
+`acuity-index` uses two separate release tools:
 
-- `cargo-release` is the release authority
-- `cargo-dist` publishes GitHub release artifacts
-- GitHub Actions only reacts to pushed release tags
+- `cargo-release` handles the crate release itself
+- `cargo-dist` handles the GitHub Release artifacts
+- GitHub Actions only reacts after a release tag has been pushed
 
-This keeps versioning and crates.io publishing in standard Rust tooling while
-keeping GitHub integration minimal.
+In practice, that means the version bump and crates.io publish happen through
+standard Rust release tooling, while GitHub is used only to build and upload
+binary artifacts for the tagged release.
 
 ## Prerequisites
 
@@ -96,18 +97,21 @@ Dry runs are still available via plain `cargo release <level>` without
 
 ## GitHub Artifacts
 
-Once the release tag is pushed, GitHub Actions runs `cargo-dist`.
+After `cargo-release` pushes the release tag, GitHub Actions runs the
+`cargo-dist` workflow that was generated from the dist configuration.
 
-GitHub does **not** run the integration tests. Those are intentionally part of
-the local release gate instead of the GitHub workflow.
+`cargo-dist` is not the thing that decides whether the release is allowed to
+happen. The integration tests and other release checks run locally before the
+tag exists.
 
-The tag workflow only:
+The GitHub workflow only:
 
-1. plans the dist build
-2. builds the configured release artifacts
-3. extracts the matching tagged section from `CHANGELOG.md`
-4. creates or updates the GitHub Release with those release notes
-5. uploads archives and checksum files
+1. reads the pushed version tag
+2. plans the dist build for that tag
+3. builds the configured release artifacts
+4. extracts the matching tagged section from `CHANGELOG.md`
+5. creates or updates the GitHub Release with those notes
+6. uploads the archives and checksum files
 
 The current dist configuration builds release artifacts for:
 
@@ -119,7 +123,8 @@ The current dist configuration builds release artifacts for:
 
 ## Dist Configuration
 
-`cargo-dist` is configured in `dist-workspace.toml`.
+`cargo-dist` is configured in `dist-workspace.toml`. That file tells dist what
+artifacts to build and how the release workflow should behave.
 
 The repo uses a dedicated `dist` profile in `Cargo.toml`:
 
@@ -163,11 +168,16 @@ book note can help with long-tail discovery and search visibility.
 
 ## Regenerating Dist CI
 
-If the dist configuration changes, regenerate the workflow with:
+If you change `dist-workspace.toml` or other dist-related release settings,
+regenerate the GitHub Actions workflow with:
 
 ```bash
 dist generate --mode ci
 ```
 
-This project keeps the generated workflow tag-driven only. Do not move the
-integration suite into GitHub Actions; the release gate is intentionally local.
+This updates the generated workflow under `.github/workflows/` so it matches
+the current dist configuration.
+
+The generated workflow is intentionally tag-driven only. Do not move the
+integration suite into GitHub Actions; those checks are meant to stay in the
+local release gate.
