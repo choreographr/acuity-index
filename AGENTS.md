@@ -14,6 +14,11 @@
 - Prefer updating the relevant book page or code comments instead of re-stating architecture here.
 - Keep this file focused on navigation and repo-specific test policy.
 
+## Toolchain
+
+- The default toolchain is NIGHTLY (see `rust-toolchain.toml`), so every adhoc `cargo` command auto-applies the fast per-profile `-Z` flags via the `[unstable] profile-rustflags` opt-in in `.cargo/config.toml`. Do not pass `+nightly` or set `RUSTFLAGS` — they apply automatically.
+- A STABLE build is an explicit opt-out: `just build-stable` / `check-stable` / `test-stable` (via `scripts/build-stable.sh`), which temporarily strips the nightly-only keys and restores them. Do not hand-edit `Cargo.toml` or `.cargo/config.toml` to get stable; use the script.
+
 ## Test policy
 
 - Unit tests must be deterministic and must not rely on wall-clock timing.

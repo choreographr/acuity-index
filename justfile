@@ -13,6 +13,27 @@ build:
 build-release:
     cargo build --release
 
+# ── stable builds (escape hatch from the nightly default) ─────────────────────
+# The default toolchain is NIGHTLY (see rust-toolchain.toml), so every adhoc
+# `cargo` command — including `cargo build -p acuity-index` / `cargo check` /
+# `cargo test` — automatically applies the fast per-profile `-Z` flags via
+# [unstable] profile-rustflags (see .cargo/config.toml). Those same nightly-only
+# bits HARD-BLOCK stable Cargo, so a stable build is an explicit opt-out: these
+# recipes run through scripts/build-stable.sh, which temporarily strips the
+# nightly-only config/manifest keys for one command and restores them after.
+
+# Stable build (the `profile` — release by default — plus any extra args)
+build-stable:
+    ./scripts/build-stable.sh build
+
+# Stable type-check (all targets, no linking)
+check-stable:
+    ./scripts/build-stable.sh check --all-targets
+
+# Stable tests (libtest)
+test-stable:
+    ./scripts/build-stable.sh test
+
 test:
     cargo test
 

@@ -1,0 +1,17 @@
+# Per-profile rustflags (unstable Cargo feature, nightly-only). This opt-in is
+# what lets the root Cargo.toml scope `-Z` compiler flags by profile —
+# `-Zshare-generics=yes` and `--jobs-frontend=0` in [profile.dev] — so EVERY
+# adhoc `cargo` command (including per-crate `-p x` builds and `cargo test` /
+# `cargo nextest run`) automatically builds fast under the nightly default
+# toolchain (see rust-toolchain.toml). An LLM/agent issuing raw `cargo` commands
+# needs to know nothing: the flags just apply.
+#
+# This block, plus the per-profile `rustflags` keys it enables, HARD-BLOCKS
+# stable Cargo. Stable builds are therefore an explicit opt-out, run through
+# scripts/build-stable.sh (`just build-stable` / `check-stable` / `test-stable`),
+# which temporarily strips these nightly-only bits, runs `cargo +stable ...`,
+# and restores them. Note: profile rustflags replace [build] rustflags but
+# concatenate with [target.'cfg(...)'] rustflags, so per-machine linker flags
+# (e.g. the wild-linker flags in ~/.cargo/config.toml) still apply.
+[unstable]
+profile-rustflags = true

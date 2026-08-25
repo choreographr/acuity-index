@@ -7,6 +7,13 @@ description = "Configurable omni-indexer for Substrate blockchains."
 homepage = "https://index.acuity.network/"
 repository = "https://github.com/acuity-network/acuity-index"
 license = "Apache-2.0"
+# MSRV: the crate builds and tests on Rust 1.92.0 and newer; keep code and
+# dependencies within this floor (verified against a `cargo +1.92.0
+# check --all-targets` run). The workspace defaults to NIGHTLY (see
+# rust-toolchain.toml) so every adhoc `cargo` command gets the fast per-profile
+# `-Z` flags; stable builds are an explicit opt-out via `just build-stable` /
+# `check-stable` / `test-stable`.
+rust-version = "1.92.0"
 
 [package.metadata.release]
 allow-branch = ["master"]
@@ -72,13 +79,52 @@ sp-trie = "43.0.0"
 subxt-lightclient = { version = "0.50.0", features = ["native"] }
 tempfile = "3"
 
+# Dev profile (the default for `cargo build` / `cargo run` / `cargo test`).
+# debug = "line-tables-only": emit line tables (file:line for backtraces)
+# without full debug info — cuts compile time and artifact size vs the default
+# full debuginfo while still giving usable backtraces during development.
+#
+# rustflags (requires the [unstable] profile-rustflags opt-in in
+# .cargo/config.toml; nightly-only — see rust-toolchain.toml): auto-applied to
+# every adhoc `cargo` command under the nightly default toolchain, including
+# `cargo build -p acuity-index` / `cargo check -p acuity-index` / `cargo nextest
+# run -p acuity-index`.
+# - -Zshare-generics=yes: emit each generic monomorphization once per crate
+#   graph instead of once per using crate — the big dev-build win. Deliberately
+#   dev-ONLY: it has a history of codegen bugs under optimization, and with no
+#   LTO in the release profile there is no link-time dedup to compare against.
+# - -Zunstable-options + --jobs-frontend=0: parallelize the rustc query
+#   frontend across one thread per logical core (0 = available_parallelism —
+#   rustc's "auto"). Self-tuning: a 2-core laptop and a 64-core box each get
+#   the right pool size with no edit.
+# - -C target-cpu=native: build for the LOCAL machine's CPU so every local
+#   build — dev, test, and release — is tuned for the box it runs on. This is
+#   the repo-wide default and deliberately NEVER reaches a shipped artifact:
+#   shipped binaries use the `dist` profile, which inherits release (not dev)
+#   and carries no `target-cpu=native`, so they stay on the baseline CPU.
+#   KEEP THE ARRAY ON ONE LINE: build-stable.sh strips `^rustflags = [` lines
+#   exactly; a multi-line array would leave dangling entries in the stripped
+#   manifest and break the stable build.
+[profile.dev]
+debug = "line-tables-only"
+rustflags = ["-Zunstable-options", "--jobs-frontend=0", "-Zshare-generics=yes", "-C", "target-cpu=native"]
+
+# Dev-loop release profile: optimized (opt-level 3, the release default) but
+# links FAST — no LTO and no single-codegen-unit serialization — so `just
+# build-release` / `just benchmark-indexing` iterate quickly. The slow-link
+# codegen lives only in the `dist` profile below (the shipped-artifact path).
 [profile.release]
-opt-level = 3
+
+# Shipped-artifact profile (used by cargo-dist). Inherits release's opt-level
+# but adds the expensive-but-optimal codegen that the release profile keeps off
+# to keep local linking fast:
+# - lto = "thin": cross-crate inlining/optimization at link time (slower link)
+# - codegen-units = 1: serialize codegen for maximum optimization (slower compile)
+# - incremental = false: no incremental cache (deterministic, smaller artifacts)
+# - strip = "symbols": cut shipped size; panic messages keep their file:line
+[profile.dist]
+inherits = "release"
 lto = "thin"
 codegen-units = 1
 incremental = false
 strip = "symbols"
-
-[profile.dist]
-inherits = "release"
-lto = "thin"
