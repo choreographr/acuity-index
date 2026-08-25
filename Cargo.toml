@@ -90,10 +90,11 @@ tracing-subscriber = "0.3"
 zerocopy = "0.8.47"
 zerocopy-derive = "0.8.47"
 
+# The integration test verifies storage proofs against the runtime, so it needs
+# the same sp-* types as the runtime. It sources them from the polkadot-sdk
+# umbrella (not pinned per-crate) so the versions always match the runtime.
 [dev-dependencies]
-sp-core = "43.0.0"
-sp-state-machine = "0.53.0"
-sp-trie = "46.0.0"
+polkadot-sdk = { workspace = true, features = ["sp-core", "sp-state-machine", "sp-trie", "std"] }
 subxt-lightclient = { version = "0.50.0", features = ["native"] }
 tempfile = "3"
 

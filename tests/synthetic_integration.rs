@@ -6,9 +6,9 @@ use acuity_index::synthetic_devnet::{
     validate_query_expectation, wait_for_indexed_tip, wait_for_node,
 };
 use serde_json::{Value, json};
-use sp_core::{Blake2Hasher, H256};
-use sp_state_machine::read_proof_check;
-use sp_trie::StorageProof;
+use polkadot_sdk::sp_core::{Blake2Hasher, H256};
+use polkadot_sdk::sp_state_machine::read_proof_check;
+use polkadot_sdk::sp_trie::StorageProof;
 use std::{
     error::Error,
     io,
