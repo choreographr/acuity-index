@@ -88,8 +88,8 @@ sled = "0.34"
 # sp-trie) ARE sourced from the umbrella instead, because they never ship in the
 # binary — see [dev-dependencies] below.
 sp-crypto-hashing = "0.1.0"
-subxt = "0.50.0"
-subxt-signer = "0.50.0"
+subxt = "0.50.3"
+subxt-signer = "0.50.3"
 thiserror = { version = "2", default-features = false }
 tokio = { version = "1", features = ["full"] }
 tokio-tungstenite = "0.29.0"
@@ -105,7 +105,7 @@ zerocopy-derive = "0.8.47"
 # umbrella (not pinned per-crate) so the versions always match the runtime.
 [dev-dependencies]
 polkadot-sdk = { workspace = true, features = ["sp-core", "sp-state-machine", "sp-trie", "std"] }
-subxt-lightclient = { version = "0.50.0", features = ["native"] }
+subxt-lightclient = { version = "0.50.3", features = ["native"] }
 tempfile = "3"
 
 # Dev profile (the default for `cargo build` / `cargo run` / `cargo test`).
