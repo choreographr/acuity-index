@@ -77,6 +77,16 @@ serde_json = "1"
 signal-hook = "0.4"
 signal-hook-tokio = { version = "0.4", features = ["futures-v0_3"] }
 sled = "0.34"
+# sp-crypto-hashing is a polkadot-sdk crate kept as a DIRECT, version-pinned
+# dependency (not sourced from the polkadot-sdk umbrella). It is called at
+# runtime (event_hydration.rs: twox_128) and is a production dependency of the
+# shipped indexer — routing it through the umbrella would pull the whole SDK
+# umbrella into the shipped binary's dependency graph, which is not worth it for
+# one hash function. Its version (0.1.0) happens to match the umbrella's own pin
+# (the resolver unifies them to a single copy), so there is no conflict. The
+# dev-only sp-* crates the integration test needs (sp-core / sp-state-machine /
+# sp-trie) ARE sourced from the umbrella instead, because they never ship in the
+# binary — see [dev-dependencies] below.
 sp-crypto-hashing = "0.1.0"
 subxt = "0.50.0"
 subxt-signer = "0.50.0"
