@@ -7,13 +7,12 @@ description = "Configurable omni-indexer for Substrate blockchains."
 homepage = "https://index.acuity.network/"
 repository = "https://github.com/acuity-network/acuity-index"
 license = "Apache-2.0"
-# MSRV: the crate builds and tests on Rust 1.92.0 and newer; keep code and
-# dependencies within this floor (verified against a `cargo +1.92.0
-# check --all-targets` run). The workspace defaults to NIGHTLY (see
-# rust-toolchain.toml) so every adhoc `cargo` command gets the fast per-profile
-# `-Z` flags; stable builds are an explicit opt-out via `just build-stable` /
-# `check-stable` / `test-stable`.
-rust-version = "1.92.0"
+# MSRV: the workspace tracks the latest nightly toolchain (see
+# rust-toolchain.toml); the declared `rust-version` floor is the latest stable
+# Rust (1.98.0). Stable builds are an explicit opt-out via `just build-stable` /
+# `check-stable` / `test-stable`. Dependencies are allowed to require newer Rust
+# than this floor only insofar as the build toolchain (nightly) provides it.
+rust-version = "1.98.0"
 
 [package.metadata.release]
 allow-branch = ["master"]
@@ -57,6 +56,7 @@ resolver = "3"
 polkadot-sdk = { version = "2606.1.0", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["derive"] }
 scale-info = { version = "2.11.6", default-features = false, features = ["derive"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
 [dependencies]
 ahash = "0.8"
@@ -67,13 +67,13 @@ clap-verbosity-flag = "3"
 futures = "0.3"
 hex = "0.4"
 home = "0.5"
-notify = "6"
+notify = "8.2.0"
 num-format = "0.4"
-prometheus-client = "0.24"
-scale-info = "2.11"
+prometheus-client = "0.25.0"
+scale-info = { workspace = true, features = ["std"] }
 scale-value = "0.18"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { workspace = true, features = ["std"] }
 signal-hook = "0.4"
 signal-hook-tokio = { version = "0.4", features = ["futures-v0_3"] }
 sled = "0.34"
@@ -92,7 +92,7 @@ subxt = "0.50.3"
 subxt-signer = "0.50.3"
 thiserror = { version = "2", default-features = false }
 tokio = { version = "1", features = ["full"] }
-tokio-tungstenite = "0.29.0"
+tokio-tungstenite = "0.30.0"
 toml = "1.1.0"
 tracing = "0.1"
 tracing-log = "0.2"
