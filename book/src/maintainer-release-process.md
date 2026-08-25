@@ -31,7 +31,7 @@ Before `cargo-release` is allowed to tag or publish, it runs:
 ```bash
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
-cargo test
+cargo test-fast
 just test-integration
 ```
 

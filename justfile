@@ -34,13 +34,54 @@ check-stable:
 test-stable:
     ./scripts/build-stable.sh test
 
-test:
+# ── testing (cargo-nextest, the primary runner) ──────────────────────────────
+# The default toolchain is NIGHTLY (see rust-toolchain.toml), so all of these
+# auto-apply the fast per-profile `-Z` flags. The `test-*` recipes use
+# cargo-nextest (parallel, every test in its own process); the cargo aliases are
+# defined in .cargo/config.toml. A libtest fallback is provided for the
+# nextest-less path (`cargo test`), and `test-stable` covers the stable escape
+# hatch.
+
+# Install the test runner (cargo-nextest)
+install-nextest:
+    cargo install cargo-nextest
+
+# Fail fast with a hint when cargo-nextest is missing (beats cargo's "no such
+# command: test-fast")
+_require-nextest:
+    @command -v cargo-nextest >/dev/null 2>&1 || { echo "error: cargo-nextest not found — run \`just install-nextest\`" >&2; exit 1; }
+
+# Full unit suite (alias of test-fast)
+test: test-fast
+
+# Unit tests via nextest (parallel, every test in its own process; default
+# feature set)
+test-fast: _require-nextest
+    cargo test-fast
+
+# Unit tests with every optional feature on (synthetic-tools: the tool bins)
+test-all-features: _require-nextest
+    cargo test-all-features
+
+# The synthetic integration suite — the #[ignore] tests — via nextest. Requires
+# a running polkadot-omni-node and a release runtime build (see runtime-build /
+# runtime-chain-spec / synthetic-node).
+test-integration: _require-nextest
+    cargo test-integration
+
+# Everything: unit + integration via nextest in one pass (still requires the
+# local node for the integration tests).
+test-all: _require-nextest
+    cargo test-all
+
+# Unit tests via libtest (serialized across binaries; no nextest required)
+test-libtest:
     cargo test
 
 release-checks:
     cargo fmt --check
     cargo clippy --all-targets --all-features -- -D warnings
-    cargo test
+    cargo test-fast
     just test-integration
 
 release level='patch':
@@ -77,9 +118,6 @@ seed-smoke url='ws://127.0.0.1:9944':
 
 seed-bulk url='ws://127.0.0.1:9944' batch_start='1000' batches='100' burst_count='64':
     cargo run --features synthetic-tools --bin seed_synthetic_runtime -- --url "{{url}}" --mode bulk --batch-start "{{batch_start}}" --batches "{{batches}}" --burst-count "{{burst_count}}"
-
-test-integration:
-    cargo test --features synthetic-tools --test synthetic_integration -- --ignored --nocapture
 
 benchmark-indexing rpc_port='9944' queue_depth='4' batch_start='1000' batches='1000' burst_count='128' timeout_secs='600': runtime-chain-spec
     #!/usr/bin/env bash

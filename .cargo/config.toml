@@ -1,3 +1,24 @@
+# cargo-nextest convenience aliases (the parallel test runner). They mirror the
+# libtest split (`cargo test` = unit tests, `-- --ignored` = the synthetic
+# integration suite) while running every test in its own process, in parallel,
+# across all cores.
+#
+# acuity-index is a single crate (not a workspace), so the aliases omit
+# `--workspace`; `nextest run` defaults to the current package. The default
+# features are empty, so:
+# - `test-fast` runs unit tests on the default feature set (the quick gate).
+# - `test-all-features` turns on every optional feature (synthetic-tools: the
+#   two synthetic tool bins).
+# - `test-integration` runs the #[ignore] synthetic_* tests — they need a
+#   running polkadot-omni-node plus a release runtime build.
+# - `test-all` is everything in one pass (unit + integration), still requiring
+#   the local node.
+[alias]
+test-fast = "nextest run"                                  # unit tests, default features
+test-all-features = "nextest run --all-features"          # unit tests, every feature on
+test-integration = "nextest run --all-features --test synthetic_integration --run-ignored only"
+test-all = "nextest run --all-features --run-ignored all"  # unit + integration, one pass
+
 # Per-profile rustflags (unstable Cargo feature, nightly-only). This opt-in is
 # what lets the root Cargo.toml scope `-Z` compiler flags by profile —
 # `-Zshare-generics=yes` and `--jobs-frontend=0` in [profile.dev] — so EVERY
