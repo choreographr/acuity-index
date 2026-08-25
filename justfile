@@ -1,7 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 runtime_manifest := "runtime/Cargo.toml"
-runtime_wasm := "runtime/target/release/wbuild/synthetic-runtime/synthetic_runtime.wasm"
+runtime_wasm := "target/release/wbuild/synthetic-runtime/synthetic_runtime.wasm"
 runtime_chain_spec := "runtime/target/synthetic-dev-chain-spec.json"
 
 default:

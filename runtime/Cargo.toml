@@ -7,12 +7,9 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["derive"] }
-frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2603", default-features = false }
-frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2603", default-features = false }
-pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2603", default-features = false }
+codec = { workspace = true }
 pallet-synthetic = { path = "pallets/synthetic", default-features = false }
-polkadot-sdk = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2603", default-features = false, features = [
+polkadot-sdk = { workspace = true, features = [
     "cumulus-primitives-core",
     "pallet-aura",
     "pallet-grandpa",
@@ -27,19 +24,16 @@ polkadot-sdk = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "
     "sp-keyring",
     "staging-parachain-info",
 ] }
-scale-info = { version = "2.11.6", default-features = false, features = ["derive"] }
+scale-info = { workspace = true }
 serde_json = { version = "1.0.145", default-features = false, features = ["alloc"] }
 
 [build-dependencies]
-polkadot-sdk = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2603", default-features = false, features = ["substrate-wasm-builder"] }
+polkadot-sdk = { workspace = true, features = ["substrate-wasm-builder"] }
 
 [features]
 default = ["std"]
 std = [
     "codec/std",
-    "frame-support/std",
-    "frame-system/std",
-    "pallet-balances/std",
     "pallet-synthetic/std",
     "polkadot-sdk/std",
     "scale-info/std",

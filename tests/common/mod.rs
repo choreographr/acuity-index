@@ -27,7 +27,9 @@ pub fn runtime_manifest() -> PathBuf {
 }
 
 pub fn runtime_wasm() -> PathBuf {
-    repo_root().join("runtime/target/release/wbuild/synthetic-runtime/synthetic_runtime.wasm")
+    // The runtime is a workspace member, so substrate-wasm-builder emits into the
+    // workspace root target/ (not runtime/target/).
+    repo_root().join("target/release/wbuild/synthetic-runtime/synthetic_runtime.wasm")
 }
 
 fn build_runtime_release_inner() -> Result<(), Box<dyn Error>> {

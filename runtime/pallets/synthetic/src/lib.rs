@@ -2,7 +2,7 @@
 
 pub use pallet::*;
 
-use frame_support::weights::Weight;
+use polkadot_sdk::frame_support::weights::Weight;
 
 pub trait WeightInfo {
     fn store_record() -> Weight;
@@ -24,19 +24,19 @@ impl WeightInfo for () {
     }
 }
 
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         #[allow(deprecated)]
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         type WeightInfo: WeightInfo;
         #[pallet::constant]
         type MaxBurstCount: Get<u32>;

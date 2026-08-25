@@ -40,6 +40,24 @@ name = "seed_synthetic_runtime"
 path = "src/bin/seed_synthetic_runtime.rs"
 required-features = ["synthetic-tools"]
 
+# Workspace root. Includes the synthetic runtime (and its pallet) so the indexer
+# and the runtime share one lockfile and one resolver — no version skew between
+# the runtime's trie/state-machine and the integration test's proof verification.
+# The runtime is a Substrate no_std runtime built with substrate-wasm-builder.
+[workspace]
+members = ["runtime", "runtime/pallets/synthetic"]
+resolver = "3"
+
+# Single source of truth for the polkadot-sdk family versions. Every crate grabs
+# these via `X.workspace = true`; nothing is version-pinned in a member manifest.
+# `codec`/`scale-info` must be real (proc-macro) dependencies for the frame
+# derives, so they live here once and stay in lockstep with the umbrella's own
+# pins (the resolver unifies them).
+[workspace.dependencies]
+polkadot-sdk = { version = "2606.1.0", default-features = false }
+codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["derive"] }
+scale-info = { version = "2.11.6", default-features = false, features = ["derive"] }
+
 [dependencies]
 ahash = "0.8"
 byte-unit = "5.2"
@@ -73,9 +91,9 @@ zerocopy = "0.8.47"
 zerocopy-derive = "0.8.47"
 
 [dev-dependencies]
-sp-core = "39.0.0"
-sp-state-machine = "0.50.0"
-sp-trie = "43.0.0"
+sp-core = "43.0.0"
+sp-state-machine = "0.53.0"
+sp-trie = "46.0.0"
 subxt-lightclient = { version = "0.50.0", features = ["native"] }
 tempfile = "3"
 
