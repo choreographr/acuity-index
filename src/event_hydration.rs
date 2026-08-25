@@ -316,6 +316,44 @@ mod tests {
     }
 
     #[test]
+    fn decode_timestamp_storage_value_reads_scale_u32_as_u64() {
+        // Some runtimes historically stored Timestamp::Now as a u32; it must
+        // still be decoded (as a u64) rather than rejected.
+        assert_eq!(
+            decode_timestamp_storage_value(&1234u32.to_le_bytes()),
+            Some(1234)
+        );
+    }
+
+    #[test]
+    fn decode_timestamp_storage_value_rejects_empty_and_odd_lengths() {
+        assert_eq!(decode_timestamp_storage_value(&[]), None);
+        assert_eq!(decode_timestamp_storage_value(&[1, 2, 3]), None);
+        assert_eq!(decode_timestamp_storage_value(&[0u8; 7]), None);
+    }
+
+    #[test]
+    fn encode_event_value_handles_unnamed_fields_and_variant_index() {
+        let fields = Composite::Unnamed(vec![
+            Value {
+                value: ValueDef::Primitive(Primitive::U128(1000)),
+                context: (),
+            },
+            Value {
+                value: ValueDef::Primitive(Primitive::String("tag".into())),
+                context: (),
+            },
+        ]);
+
+        let value = encode_event_value(7, "System", "Remark", 0, 255, 3, &fields);
+        assert_eq!(value["specVersion"], 7);
+        assert_eq!(value["eventName"], "Remark");
+        assert_eq!(value["variantIndex"], 255);
+        assert_eq!(value["fields"][0], "1000");
+        assert_eq!(value["fields"][1], "tag");
+    }
+
+    #[test]
     fn system_events_storage_key_matches_substrate_layout() {
         assert_eq!(
             hex::encode(system_events_storage_key()),
@@ -329,5 +367,14 @@ mod tests {
             hex::encode(timestamp_now_storage_key()),
             "f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb"
         );
+    }
+
+    #[test]
+    fn storage_key_layout_splits_twox_128_hashes() {
+        let key = storage_key(b"A", b"B");
+        let pallet_hash = sp_crypto_hashing::twox_128(b"A");
+        let entry_hash = sp_crypto_hashing::twox_128(b"B");
+        assert_eq!(&key[..16], &pallet_hash);
+        assert_eq!(&key[16..], &entry_hash);
     }
 }

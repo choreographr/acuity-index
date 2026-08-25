@@ -378,3 +378,236 @@ pub fn validate_query_expectation(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ─── Key builders ──────────────────────────────────────────────────────
+
+    #[test]
+    fn key_u32_builds_custom_key_json() {
+        let key = key_u32("batch_id", 77);
+        assert_eq!(
+            key,
+            json!({"type": "Custom", "value": {"name": "batch_id", "kind": "u32", "value": 77}})
+        );
+    }
+
+    #[test]
+    fn key_bytes32_builds_custom_key_json_with_hex_value() {
+        let key = key_bytes32("digest", [0xAB; 32]);
+        assert_eq!(key["type"], "Custom");
+        assert_eq!(key["value"]["name"], "digest");
+        assert_eq!(key["value"]["kind"], "bytes32");
+        assert_eq!(
+            key["value"]["value"],
+            json!(format!("0x{}", hex::encode([0xAB; 32])))
+        );
+    }
+
+    #[test]
+    fn key_account_uses_account_id_name_bytes32_kind() {
+        let key = key_account([0xCD; 32]);
+        assert_eq!(key["value"]["name"], "account_id");
+        assert_eq!(key["value"]["kind"], "bytes32");
+    }
+
+    #[test]
+    fn bytes32_hex_prefixes_encoded_bytes() {
+        assert_eq!(bytes32_hex([0u8; 32]), format!("0x{}", "00".repeat(32)));
+        assert_eq!(bytes32_hex([0xFF; 32]), format!("0x{}", "ff".repeat(32)));
+    }
+
+    // ─── synthetic_digest ─────────────────────────────────────────────────
+
+    #[test]
+    fn synthetic_digest_encodes_batch_and_seq_in_first_eight_bytes() {
+        let digest = synthetic_digest(0x01020304, 0x05060708);
+        assert_eq!(&digest[..4], &[1, 2, 3, 4]);
+        assert_eq!(&digest[4..8], &[5, 6, 7, 8]);
+    }
+
+    #[test]
+    fn synthetic_digest_is_deterministic_for_same_inputs() {
+        assert_eq!(synthetic_digest(123, 456), synthetic_digest(123, 456));
+        assert_ne!(synthetic_digest(123, 456), synthetic_digest(123, 457));
+    }
+
+    // ─── Index spec rendering ──────────────────────────────────────────────
+
+    #[test]
+    fn render_synthetic_index_spec_embeds_genesis_hash_and_url() {
+        let rendered = render_synthetic_index_spec("ws://127.0.0.1:9944", "deadbeef").unwrap();
+        assert!(rendered.contains("genesis_hash = \"deadbeef\""));
+        assert!(rendered.contains("default_url = \"ws://127.0.0.1:9944\""));
+        assert!(rendered.contains("spec_change_blocks = [0]"));
+    }
+
+    #[test]
+    fn render_synthetic_index_spec_parses_as_valid_toml() {
+        let rendered = render_synthetic_index_spec("ws://127.0.0.1:9944", "abcdef").unwrap();
+        let doc: toml::Value = toml::from_str(&rendered).unwrap();
+        assert_eq!(doc["name"].as_str(), Some("synthetic-runtime"));
+        assert_eq!(doc["genesis_hash"].as_str(), Some("abcdef"));
+        assert!(doc.get("keys").and_then(toml::Value::as_table).is_some());
+        let pallets = doc["pallets"].as_array().unwrap();
+        assert_eq!(pallets.len(), 2);
+    }
+
+    #[test]
+    fn write_synthetic_index_spec_round_trips_to_disk() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("synthetic.toml");
+        write_synthetic_index_spec(&path, "ws://127.0.0.1:9944", "beef").unwrap();
+        let contents = std::fs::read_to_string(&path).unwrap();
+        assert!(contents.contains("genesis_hash = \"beef\""));
+    }
+
+    // ─── Status / events helpers ───────────────────────────────────────────
+
+    #[test]
+    fn spans_cover_tip_true_when_a_span_reaches_tip() {
+        let status = json!({"result": {"spans": [{"start": 1, "end": 500}]}});
+        assert!(spans_cover_tip(&status, 500));
+        assert!(spans_cover_tip(&status, 100));
+    }
+
+    #[test]
+    fn spans_cover_tip_false_before_tip() {
+        let status = json!({"result": {"spans": [{"start": 1, "end": 400}]}});
+        assert!(!spans_cover_tip(&status, 500));
+    }
+
+    #[test]
+    fn spans_cover_tip_empty_or_missing_spans_is_false() {
+        assert!(!spans_cover_tip(&json!({}), 1));
+        assert!(!spans_cover_tip(&json!({"result": {"spans": []}}), 1));
+    }
+
+    #[test]
+    fn events_len_counts_result_events_and_defaults_zero() {
+        let response = json!({"result": {"events": [{}, {}, {}]}});
+        assert_eq!(events_len(&response), 3);
+        assert_eq!(events_len(&json!({"result": {}})), 0);
+        assert_eq!(events_len(&json!({})), 0);
+    }
+
+    #[test]
+    fn decoded_event_names_extracts_names_in_order() {
+        let response = json!({"result": {"events": [
+            {"event": {"eventName": "A"}},
+            {"event": {"eventName": "B"}},
+            {"event": {}},
+        ]}});
+        assert_eq!(
+            decoded_event_names(&response),
+            vec!["A".to_string(), "B".to_string()]
+        );
+    }
+
+    #[test]
+    fn validate_query_expectation_accepts_when_count_and_names_met() {
+        let query = QueryExpectation {
+            description: "ok".into(),
+            key: key_u32("batch_id", 1),
+            min_events: 2,
+            expected_event_names: vec!["BurstEmitted".into()],
+        };
+        let response = json!({"result": {"events": [
+            {"event": {"eventName": "BurstEmitted"}},
+            {"event": {"eventName": "Other"}},
+        ]}});
+        assert!(validate_query_expectation(&query, &response).is_ok());
+    }
+
+    #[test]
+    fn validate_query_expectation_rejects_when_count_below_min() {
+        let query = QueryExpectation {
+            description: "too few".into(),
+            key: key_u32("batch_id", 1),
+            min_events: 5,
+            expected_event_names: vec![],
+        };
+        let response = json!({"result": {"events": [{}]}});
+        let err = validate_query_expectation(&query, &response).unwrap_err();
+        assert!(err.contains("too few"));
+        assert!(err.contains("returned 1"));
+    }
+
+    #[test]
+    fn validate_query_expectation_rejects_missing_expected_event() {
+        let query = QueryExpectation {
+            description: "missing name".into(),
+            key: key_u32("batch_id", 1),
+            min_events: 1,
+            expected_event_names: vec!["RecordStored".into()],
+        };
+        let response = json!({"result": {"events": [{"event": {"eventName": "BurstEmitted"}}]}});
+        let err = validate_query_expectation(&query, &response).unwrap_err();
+        assert!(err.contains("missing decoded event 'RecordStored'"));
+    }
+
+    // ─── Manifest / report serde round-trips ───────────────────────────────
+
+    #[test]
+    fn query_expectation_serde_round_trip_camel_case() {
+        let query = QueryExpectation {
+            description: "desc".into(),
+            key: key_u32("batch_id", 9),
+            min_events: 3,
+            expected_event_names: vec!["A".into()],
+        };
+        let json = serde_json::to_string(&query).unwrap();
+        assert!(json.contains("minEvents"));
+        let back: QueryExpectation = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.description, "desc");
+        assert_eq!(back.min_events, 3);
+        assert_eq!(back.expected_event_names, vec!["A".to_string()]);
+    }
+
+    #[test]
+    fn seed_manifest_serde_round_trip() {
+        let manifest = SeedManifest {
+            mode: "bulk".into(),
+            genesis_hash: "abcdef".into(),
+            start_block: 1,
+            end_block: 100,
+            total_blocks: 100,
+            transactions_submitted: 50,
+            synthetic_event_count: 100,
+            queries: vec![],
+        };
+        let json = serde_json::to_string(&manifest).unwrap();
+        assert!(json.contains("genesisHash"));
+        let back: SeedManifest = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.end_block, 100);
+        assert_eq!(back.synthetic_event_count, 100);
+    }
+
+    #[test]
+    fn benchmark_report_serde_round_trip() {
+        let report = BenchmarkReport {
+            chain_tip: 10,
+            indexed_blocks: 9,
+            queue_depth: 4,
+            synthetic_event_count: 18,
+            elapsed_seconds: 1.5,
+            blocks_per_second: 6.0,
+            synthetic_events_per_second: 12.0,
+        };
+        let json = serde_json::to_string(&report).unwrap();
+        let back: BenchmarkReport = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.queue_depth, 4);
+        assert_eq!(back.blocks_per_second, 6.0);
+    }
+
+    #[test]
+    fn pick_unused_port_returns_bindable_port() {
+        let port = pick_unused_port().unwrap();
+        assert!(port > 0);
+        // The chosen port must be bindable again to avoid a transient collision.
+        let listener = std::net::TcpListener::bind(("127.0.0.1", port)).unwrap();
+        drop(listener);
+    }
+}

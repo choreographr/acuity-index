@@ -507,6 +507,43 @@ mod tests {
     }
 
     #[test]
+    fn build_index_status_result_skips_malformed_span_records() {
+        let trees = temp_trees();
+
+        // A malformed value (too short to decode as a span) must be skipped.
+        trees.span.insert(1u32.to_be_bytes(), vec![0x00]).unwrap();
+        // A key that is not a decodable u32 (wrong length) must be skipped.
+        trees
+            .span
+            .insert(
+                vec![0xAA, 0xBB],
+                SpanDbValue {
+                    start: 5u32.into(),
+                    version: 0u16.into(),
+                }
+                .as_bytes(),
+            )
+            .unwrap();
+        // A well-formed record is still surfaced.
+        trees
+            .span
+            .insert(
+                50u32.to_be_bytes(),
+                SpanDbValue {
+                    start: 40u32.into(),
+                    version: 0u16.into(),
+                }
+                .as_bytes(),
+            )
+            .unwrap();
+
+        let result = build_index_status_result(&trees.span);
+        assert_eq!(result.spans.len(), 1);
+        assert_eq!(result.spans[0].start, 40);
+        assert_eq!(result.spans[0].end, 50);
+    }
+
+    #[test]
     fn get_events_custom_empty_tree() {
         let trees = temp_trees();
         let key = Key::Custom(CustomKey {
